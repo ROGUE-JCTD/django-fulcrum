@@ -1,0 +1,60 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"number": "443-908-8888"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -137.8125,
+          45.82879925192134
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"number": "(443)-908-8888"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -85.078125,
+          12.21118019150401
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"number": "888-908-8888"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.42578125,
+          3.6888551431470478
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"number": "443-908-8tt8"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -8.0859375,
+          30.600093873550072
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"number": "4439088888"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -43.9453125,
+          61.01572481397616
+        ]
+      }
+    }
+  ]
+}

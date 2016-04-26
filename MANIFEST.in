@@ -1,0 +1,6 @@
+include readme.md
+recursive-include djfulcrum/filters/boundary_polygons *.geojson
+recursive-include djfulcrum/static *
+recursive-include djfulcrum/templates *
+recursive-include djfulcrum/tests *
+recursive-include djfulcrum/scripts *
