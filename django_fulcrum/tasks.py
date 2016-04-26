@@ -18,7 +18,7 @@
 
 from __future__ import absolute_import
 
-from .djfulcrum import DjangoFulcrum, truncate_tiles
+from .django_fulcrum import DjangoFulcrum, truncate_tiles
 from django.conf import settings
 from django.core.cache import cache
 from celery import shared_task
@@ -30,7 +30,7 @@ from fulcrum.exceptions import UnauthorizedException
 import time
 
 
-@shared_task(name="djfulcrum.tasks.task_update_layers")
+@shared_task(name="django_fulcrum.tasks.task_update_layers")
 def task_update_layers():
 
     fulcrum_api_keys = []
@@ -50,7 +50,7 @@ def task_update_layers():
               "or FULCRUM_API_KEYS = ['some_key'] defined in settings.")
 
     # http://docs.celeryproject.org/en/latest/tutorials/task-cookbook.html#ensuring-a-task-is-only-executed-one-at-a-time
-    lock_id = get_lock_id("djfulcrum.tasks.task_update_layers")
+    lock_id = get_lock_id("django_fulcrum.tasks.task_update_layers")
 
     lock_expire = 60 * 60
     if acquire_lock(lock_id, lock_expire):
@@ -62,8 +62,8 @@ def task_update_layers():
                 if not fulcrum_api_key:
                     continue
                 try:
-                    djfulcrum = DjangoFulcrum(fulcrum_api_key=fulcrum_api_key)
-                    djfulcrum.update_all_layers()
+                    django_fulcrum = DjangoFulcrum(fulcrum_api_key=fulcrum_api_key)
+                    django_fulcrum.update_all_layers()
                 except UnauthorizedException:
                     print("The API key ending in: {}, is unauthorized.".format(fulcrum_api_key[-4:]))
                     continue
@@ -71,27 +71,27 @@ def task_update_layers():
             release_lock(lock_id)
 
 
-@shared_task(name="djfulcrum.tasks.pull_s3_data")
+@shared_task(name="django_fulcrum.tasks.pull_s3_data")
 def pull_s3_data():
     if not check_filters():
         return False
     pull_all_s3_data()
 
 
-@shared_task(name="djfulcrum.tasks.task_update_tiles")
+@shared_task(name="django_fulcrum.tasks.task_update_tiles")
 def update_tiles(filtered_features, layer_name=''):
     truncate_tiles(layer_name=layer_name.lower(), srs=4326)
     truncate_tiles(layer_name=layer_name.lower(), srs=900913)
 
 
-@shared_task(name="djfulcrum.tasks.task_filter_features")
+@shared_task(name="django_fulcrum.tasks.task_filter_features")
 def task_filter_features(filter_name, features, run_once=False, run_time=None):
     from .models import Filter, Layer
     from .filters.run_filters import filter_features
 
     check_filters()
 
-    task_name = "djfulcrum.tasks.task_filter_features"
+    task_name = "django_fulcrum.tasks.task_filter_features"
     filter_lock_expire = 60 * 60
     filter_model = Filter.objects.get(filter_name=filter_name)
     if acquire_lock(Filter.get_lock_id(task_name, filter_model.filter_name), filter_lock_expire):
@@ -108,13 +108,13 @@ def task_filter_features(filter_name, features, run_once=False, run_time=None):
             filter_model.save()
 
 
-@shared_task(name="djfulcrum.tasks.task_filter_assets")
+@shared_task(name="django_fulcrum.tasks.task_filter_assets")
 def task_filter_assets(filter_name, after_time_added, run_once=False, run_time=None):
     from .models import Filter, Asset
     from dateutil.parser import parse
-    from .djfulcrum import is_valid_photo
+    from .django_fulcrum import is_valid_photo
 
-    task_name = "djfulcrum.tasks.task_filter_assets"
+    task_name = "django_fulcrum.tasks.task_filter_assets"
     filter_lock_expire = 60 * 60
     filter_model = Filter.objects.get(filter_name=filter_name)
     if acquire_lock(Filter.get_lock_id(task_name, filter_model.filter_name), filter_lock_expire):

@@ -6,7 +6,7 @@ fulcrum/*
 .idea
 *.pyc
 mvp_app/*
-djfulcrum/migrations/*
+django_fulcrum/migrations/*
 temp.json
 settings.py
 local_settings.py
@@ -17,10 +17,10 @@ test.json
 local_settings.py
 mvp/*
 clear_fm_db.sh
-!djfulcrum/scripts/settings.py
+!django_fulcrum/scripts/settings.py
 media/
 data/
-djfulcrum/tests/test_geojson.json
+django_fulcrum/tests/test_geojson.json
 build/
 init.py*
 manage.py

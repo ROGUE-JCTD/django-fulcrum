@@ -34,5 +34,5 @@ from django.contrib import admin
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
-urlpatterns = [url('^', include('djfulcrum.urls')),
+urlpatterns = [url('^', include('django_fulcrum.urls')),
                url(r'^admin/', admin.site.urls)]

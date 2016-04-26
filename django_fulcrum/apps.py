@@ -22,7 +22,7 @@ from multiprocessing import current_process
 
 
 class DjangoFulcrumConfig(AppConfig):
-    name = 'djfulcrum'
+    name = 'django_fulcrum'
 
     def ready(self):
         from django.db.utils import OperationalError
@@ -42,7 +42,7 @@ class DjangoFulcrumConfig(AppConfig):
                     print("Please ensure you have a process safe cache installed, configured, and running.")
                     exit(1)
                 if not getattr(settings, 'DJANGO_FULCRUM_USE_CELERY', True):
-                    print("Running djfulcrum without celery...")
+                    print("Running django_fulcrum without celery...")
                     from .fulcrum_task_runner import FulcrumTaskRunner
                     runner = FulcrumTaskRunner()
                     runner.start(interval=30)

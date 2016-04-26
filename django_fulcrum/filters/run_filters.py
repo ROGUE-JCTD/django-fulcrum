@@ -17,7 +17,7 @@ def filter_features(features, filter_name=None, run_once=False):
     """
 
     from ..models import Filter
-    from ..djfulcrum import delete_feature
+    from ..django_fulcrum import delete_feature
 
     workspace = os.path.dirname(os.path.abspath(__file__))
     files = os.listdir(workspace)
@@ -37,7 +37,7 @@ def filter_features(features, filter_name=None, run_once=False):
                         if not features:
                             break
                         try:
-                            module_name = 'djfulcrum.filters.' + str(filter_model.filter_name.rstrip('.py'))
+                            module_name = 'django_fulcrum.filters.' + str(filter_model.filter_name.rstrip('.py'))
                             mod = import_module(module_name)
                             print "Running: {}".format(filter_model.filter_name)
                             filtered_results = mod.filter_features(features)
@@ -111,7 +111,7 @@ def check_filters():
                 except IntegrityError:
                     return False
                 try:
-                    mod = import_module('djfulcrum.filters.' + str(filter_file.rstrip('.py')))
+                    mod = import_module('django_fulcrum.filters.' + str(filter_file.rstrip('.py')))
                     if 'setup_filter_model' in dir(mod):
                         mod.setup_filter_model()
                 except ImportError:

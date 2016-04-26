@@ -1,17 +1,16 @@
 #!/bin/bash
 
-#install djfulcrum
+#install django_fulcrum
 #add to /var/lib/geonode/rogue_geonode/geoshape/settings.py: 
 cd ~
 yum install unzip -y
+https://github.com/ROGUE-JCTD/django-fulcrum/tree/initialMigration
 wget https://github.com/ROGUE-JCTD/django-fulcrum/archive/initialMigration.zip
 unzip initialMigration.zip
-
-/var/lib/geonode/bin/python django-fulcrum-initialMigration/setup.py install
-#mv -f fm-mvp-master/mvp/djfulcrum /var/lib/geonode/lib/python2.7/site-packages/
-#chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/djfulcrum
-rm initialMigration.zip
-rm -rf initialMigration
+mv -f django-fulcrum-initialMigration/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
+chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
+rm -rf initialMigration.zip
+rm -rf django-fulcrum-initialMigration
 
 mkdir /var/lib/geonode/fulcrum_data
 chown geoshape:geoservice /var/lib/geonode/fulcrum_data
@@ -19,13 +18,14 @@ yum install memcached -y
 service memcached start
 chkconfig memcached on
 
-#/var/lib/geonode/bin/pip install fulcrum
-#/var/lib/geonode/bin/pip install python-memcached
-#/var/lib/geonode/bin/pip install boto3
-#/var/lib/geonode/bin/pip install Pillow
-grep -qF "INSTALLED_APPS += ('djfulcrum',)" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "INSTALLED_APPS += ('djfulcrum',)" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
+# /var/lib/geonode/bin/pip install django_fulcrum
+/var/lib/geonode/bin/pip install fulcrum
+/var/lib/geonode/bin/pip install python-memcached
+/var/lib/geonode/bin/pip install boto3
+/var/lib/geonode/bin/pip install Pillow
+grep -qF "INSTALLED_APPS += ('django_fulcrum',)" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "INSTALLED_APPS += ('django_fulcrum',)" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
 
-# change permissions to file_service folder so that djfulcrum can add data to the folder.
+# change permissions to file_service folder so that django_fulcrum can add data to the folder.
 chown tomcat:geoservice /var/lib/geoserver_data/file-service-store
 chmod 775 /var/lib/geoserver_data/file-service-store
 
@@ -40,12 +40,12 @@ grep -q "from datetime import timedelta" /var/lib/geonode/rogue_geonode/geoshape
 grep -q "^CELERYBEAT_SCHEDULE =" /var/lib/geonode/rogue_geonode/geoshape/settings.py ||
 printf "CELERYBEAT_SCHEDULE = {\n\
     'Update_layers_30_secs': {\n\
-        'task': 'djfulcrum.tasks.task_update_layers',\n\
+        'task': 'django_fulcrum.tasks.task_update_layers',\n\
         'schedule': timedelta(seconds=30),\n\
         'args': None\n\
     },\n\
 	'pull_s3_data_120_secs': {\n\
-        'task': 'djfulcrum.tasks.pull_s3_data',\n\
+        'task': 'django_fulcrum.tasks.pull_s3_data',\n\
         'schedule': timedelta(seconds=120),\n\
         'args': None\n\
     },\n\
@@ -103,8 +103,8 @@ function getFulcrumApiKey() {
 grep -q '^FULCRUM_API_KEYS' /var/lib/geonode/rogue_geonode/geoshape/local_settings.py || getFulcrumApiKey
 
 #add to /var/lib/geonode/rogue_geonode/geoshape/urls.py:
-grep -qF 'from djfulcrum.urls import urlpatterns as djfulcrum_urls' /var/lib/geonode/rogue_geonode/geoshape/urls.py ||
-printf "from djfulcrum.urls import urlpatterns as djfulcrum_urls\nurlpatterns += djfulcrum_urls" >> /var/lib/geonode/rogue_geonode/geoshape/urls.py
+grep -qF 'from django_fulcrum.urls import urlpatterns as django_fulcrum_urls' /var/lib/geonode/rogue_geonode/geoshape/urls.py ||
+printf "from django_fulcrum.urls import urlpatterns as django_fulcrum_urls\nurlpatterns += django_fulcrum_urls" >> /var/lib/geonode/rogue_geonode/geoshape/urls.py
 
 #add to /var/lib/geonode/rogue_geonode/geoshape/celery_app.py:
 grep -qF 'from django.conf import settings' /var/lib/geonode/rogue_geonode/geoshape/celery_app.py || echo "from django.conf import settings" >> /var/lib/geonode/rogue_geonode/geoshape/celery_app.py

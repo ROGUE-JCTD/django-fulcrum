@@ -1,6 +1,6 @@
 include readme.md
-recursive-include djfulcrum/filters/boundary_polygons *.geojson
-recursive-include djfulcrum/static *
-recursive-include djfulcrum/templates *
-recursive-include djfulcrum/tests *
-recursive-include djfulcrum/scripts *
+recursive-include django_fulcrum/filters/boundary_polygons *.geojson
+recursive-include django_fulcrum/static *
+recursive-include django_fulcrum/templates *
+recursive-include django_fulcrum/tests *
+recursive-include django_fulcrum/scripts *

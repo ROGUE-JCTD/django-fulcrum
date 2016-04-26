@@ -51,7 +51,7 @@ vagrant up
 SSH into the VM and run the following commands
 ```
 cd /tmp
-wget https://raw.githubusercontent.com/ROGUE-JCTD/django-fulcrum/master/djfulcrum/scripts/geoshape_fulcrum_install.sh -O- | tr -d '\r' > /tmp/geoshape_fulcrum_install.sh
+wget https://raw.githubusercontent.com/ROGUE-JCTD/django-fulcrum/master/django_fulcrum/scripts/geoshape_fulcrum_install.sh -O- | tr -d '\r' > /tmp/geoshape_fulcrum_install.sh
 sudo bash /tmp/geoshape_fulcrum_install.sh
 ```
 
@@ -62,7 +62,7 @@ Alternatively you may enter this information in the admin console.  It is more s
 To allow for geoshape tile truncation on addition of new data, make sure there is a default OGC_SERVER value in the  /var/lib/geonode/rogue_genode/geoshape/local_settings.py file.
 The setting keys required for tile truncation are USER and PASSWORD. These should correspond to the username/password of your GeoServer. For an example, refer to the settings documentation further down the page.
 
-Add any desired filters to the /var/lib/geonode/lib/Python27/site-packages/djfulcrum/filters file. (US geospatial and phone number filters are added by default.)
+Add any desired filters to the /var/lib/geonode/lib/Python27/site-packages/django_fulcrum/filters file. (US geospatial and phone number filters are added by default.)
 (By default these filters will be turned on, but they can be turned off in the admin console. Please be aware that the filter status changes will not be reflected in already processed data.)
 (Any additional filters added must have a primary function `def filter(input)`, where input is a geojson feature collection. The filter function must return `{'passed': passed_features, 'failed': failed_features}`, where passed and failed features are geojson feature collections.)
 
@@ -87,7 +87,7 @@ If you don't have a django repo yet a script is provided with default settings t
 
 After you installed all of the dependencies. Enter the python interpreter and enter (replacing <> with your own variable):
 ```
-from djfulcrum.scripts.project import create_mvp
+from django_fulcrum.scripts.project import create_mvp
 create_mvp(name=<project_name>, dir_path=<project_path>)
 quit()
 ```
@@ -164,7 +164,7 @@ Example:
 
 #### INSTALLED_APPS: (Required)
 The name of this app must be added to the installed_app variable so it can run as part of the host django project.
-Example: `INSTALLED_APPS += ('djfulcrum',)`
+Example: `INSTALLED_APPS += ('django_fulcrum',)`
 
 #### CACHES: (Required)
 Define the cache to be used. Memcache is suggested, but other process safe caches can be used too.
@@ -191,12 +191,12 @@ CELERYBEAT_GROUP='geoservice'
 CELERYBEAT_SCHEDULER='djcelery.schedulers.DatabaseScheduler'
 CELERYBEAT_SCHEDULE = {
     'Update_layers_30_secs': {
-        'task': 'djfulcrum.tasks.task_update_layers',
+        'task': 'django_fulcrum.tasks.task_update_layers',
         'schedule': timedelta(seconds=30),
         'args': None
     },
     'Pull_s3_data_120_secs': {
-        'task': 'djfulcrum.tasks.pull_s3_data',
+        'task': 'django_fulcrum.tasks.pull_s3_data',
         'schedule': timedelta(seconds=120),
         'args': None
     },
@@ -219,7 +219,7 @@ Example:
 ## Usage
 Once up and running you need to configure filters and import data from FulrumApp.
 
-To configure the filters, navigate to the django admin console and navigate to djfulcrum - filters.
+To configure the filters, navigate to the django admin console and navigate to django_fulcrum - filters.
 Then click on each filter and either make it not active or change the settings.  By default for testing, there are filters active which excludes data in the US.  Optionally, you can switch to show ONLY data in the US, or deactivate the filter.
 Filters are available to reduce the amount of undesired redundant data on your remote system.  This is to allow only subsets to exist on the current system. Note that the filters are destructive. If you filter points, the system marks the time that they were "filtered" and won't evaluate them again, so old data won't show up if it was "filtered" previously.  Likewise if you run a new filter on old points, "filtered" points (or media) will be deleted.
 

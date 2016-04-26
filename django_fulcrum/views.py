@@ -40,7 +40,7 @@ def geojson(request):
 
 
 def upload(request):
-    from .djfulcrum import process_fulcrum_data
+    from .django_fulcrum import process_fulcrum_data
     from .mapping import get_geojson
 
     geojson_dict = {}
@@ -58,7 +58,7 @@ def upload(request):
             print "FORM NOT VALID."
     else:
         form = UploadFulcrumData()
-    return render(request, 'djfulcrum/upload.html', {'form': form})
+    return render(request, 'django_fulcrum/upload.html', {'form': form})
 
 
 def viewer(request):
@@ -70,18 +70,18 @@ def viewer(request):
             name, link, attr = layer_tuple
             basemaps.append([name, link, attr])
         if 'layer' not in request.GET:
-            return render(request, 'djfulcrum/map.html', {'geojson_request_url': '', 'basemaps': basemaps})
+            return render(request, 'django_fulcrum/map.html', {'geojson_request_url': '', 'basemaps': basemaps})
         geojson_dict = {}
         available_layers = []
         for layer in request.GET.getlist('layer'):
             if get_geojson(layer=layer):
                 available_layers += ['layer=' + layer]
         if geojson_dict:
-            return render(request, 'djfulcrum/map.html',
-                          {'geojson_request_url': '/djfulcrum/geojson?{}' + '&'.join(available_layers),
+            return render(request, 'django_fulcrum/map.html',
+                          {'geojson_request_url': '/django_fulcrum/geojson?{}' + '&'.join(available_layers),
                            'basemaps': basemaps})
         else:
-            return render(request, 'djfulcrum/map.html', {'geojson_request_url': '', 'basemaps': basemaps})
+            return render(request, 'django_fulcrum/map.html', {'geojson_request_url': '', 'basemaps': basemaps})
 
 
 def layers(request):

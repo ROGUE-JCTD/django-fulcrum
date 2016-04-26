@@ -14,7 +14,7 @@
 from __future__ import absolute_import
 
 from django.test import TestCase, TransactionTestCase
-from ..djfulcrum import *
+from ..django_fulcrum import *
 import inspect
 from ..models import *
 import copy
@@ -480,7 +480,7 @@ class DjangoFulcrumTests(TestCase):
     #         # self.assertEqual(new_repo,repo)
 
 
-class DjFulcrumDBTests(TransactionTestCase):
+class django_fulcrumDBTests(TransactionTestCase):
     """Test cases for model functions to prevent locking issues due to transactions."""
     @classmethod
     def setUpClass(self):

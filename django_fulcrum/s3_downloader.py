@@ -23,7 +23,7 @@ from django.conf import settings
 from django.db import ProgrammingError
 import boto3
 import botocore
-from .djfulcrum import process_fulcrum_data
+from .django_fulcrum import process_fulcrum_data
 import glob
 
 
@@ -52,7 +52,7 @@ def pull_all_s3_data():
     except AttributeError:
         s3_credentials = []
 
-    lock_id = get_lock_id("djfulcrum.tasks.pull_s3_data")
+    lock_id = get_lock_id("django_fulcrum.tasks.pull_s3_data")
     lock_expire = 60 * 2160  # LOCK_EXPIRE IS IN SECONDS (i.e. 60*2160 is 1.5 days)
 
     if acquire_lock(lock_id, lock_expire):

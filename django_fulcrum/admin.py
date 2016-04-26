@@ -104,7 +104,7 @@ class FilterAdmin(admin.ModelAdmin):
                     'formset': request.POST,
                     'request': request,
                 }
-                confirmation_page = get_template('djfulcrum/confirmation.html')
+                confirmation_page = get_template('django_fulcrum/confirmation.html')
                 return TemplateResponse(request, confirmation_page, context, current_app=self.admin_site.name)
         else:
             opts = self.model._meta

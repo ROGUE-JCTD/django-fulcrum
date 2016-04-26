@@ -23,18 +23,18 @@
 
     {% load staticfiles %}
 
-	<link rel="stylesheet" href="{% static "djfulcrum/leaflet/leaflet.css" %}" />
+	<link rel="stylesheet" href="{% static "django_fulcrum/leaflet/leaflet.css" %}" />
 	<link rel="stylesheet" href="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css" />
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.MousePosition/src/L.Control.MousePosition.css" %}" />
-	<link rel="stylesheet" href="{% static "djfulcrum/LeafletMiniMap/src/Control.MiniMap.css" %}" />
-    <link rel="stylesheet" href="{% static "djfulcrum/font-awesome-4.5.0/css/font-awesome.min.css" %}"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/LeafletLocateControl/src/L.Control.Locate.css" %}"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.ZoomHome/dist/leaflet.zoomhome.css" %}"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.EasyButton/src/easy-button.css" %}"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.ZoomBox/L.Control.ZoomBox.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.MousePosition/src/L.Control.MousePosition.css" %}" />
+	<link rel="stylesheet" href="{% static "django_fulcrum/LeafletMiniMap/src/Control.MiniMap.css" %}" />
+    <link rel="stylesheet" href="{% static "django_fulcrum/font-awesome-4.5.0/css/font-awesome.min.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/LeafletLocateControl/src/L.Control.Locate.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.ZoomHome/dist/leaflet.zoomhome.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.EasyButton/src/easy-button.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.ZoomBox/L.Control.ZoomBox.css" %}"/>
 	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
-	<link rel="stylesheet" href="{% static "djfulcrum/map.css" %}"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.groupedlayercontrol/src/leaflet.groupedlayercontrol.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/map.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.groupedlayercontrol/src/leaflet.groupedlayercontrol.css" %}"/>
 
 </head>
 <body>
@@ -73,23 +73,23 @@
     </div>
 
 
-    <script src="{% static "djfulcrum/leaflet/leaflet.js" %}"></script>
+    <script src="{% static "django_fulcrum/leaflet/leaflet.js" %}"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js"></script>
-	<script src="{% static "djfulcrum/Leaflet.MousePosition/src/L.Control.MousePosition.js" %}"></script>
-    <script src="{% static "djfulcrum/LeafletMiniMap/src/Control.MiniMap.js" %}"></script>
-    <script src="{% static "djfulcrum/LeafletLocateControl/src/L.Control.Locate.js" %}"></script>
-    <script src="{% static "djfulcrum/Leaflet.ZoomHome/dist/leaflet.zoomhome.js" %}"></script>
-    <script src="{% static "djfulcrum/Leaflet.EasyButton/src/easy-button.js" %}"></script>
-	<script src="{% static "djfulcrum/Leaflet.ZoomBox/L.Control.ZoomBox.min.js" %}"></script>
+	<script src="{% static "django_fulcrum/Leaflet.MousePosition/src/L.Control.MousePosition.js" %}"></script>
+    <script src="{% static "django_fulcrum/LeafletMiniMap/src/Control.MiniMap.js" %}"></script>
+    <script src="{% static "django_fulcrum/LeafletLocateControl/src/L.Control.Locate.js" %}"></script>
+    <script src="{% static "django_fulcrum/Leaflet.ZoomHome/dist/leaflet.zoomhome.js" %}"></script>
+    <script src="{% static "django_fulcrum/Leaflet.EasyButton/src/easy-button.js" %}"></script>
+	<script src="{% static "django_fulcrum/Leaflet.ZoomBox/L.Control.ZoomBox.min.js" %}"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-	<script src="{% static "djfulcrum/Leaflet.groupedlayercontrol/src/leaflet.groupedlayercontrol.js" %}"></script>
+	<script src="{% static "django_fulcrum/Leaflet.groupedlayercontrol/src/leaflet.groupedlayercontrol.js" %}"></script>
     <script type="text/javascript">
     	{% autoescape off %}
     		var basemapInfo = {{basemaps}}
     	{% endautoescape %}
     </script>
-	<script src="{% static "djfulcrum/map.js" %}"></script>
+	<script src="{% static "django_fulcrum/map.js" %}"></script>
 
 </body>
 </html>

@@ -25,13 +25,13 @@
 	
 	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
 	<link rel="stylesheet" href="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css" />
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.MousePosition/src/L.Control.MousePosition.css" %}" />
-	<link rel="stylesheet" href="{% static "djfulcrum/LeafletMiniMap/src/Control.MiniMap.css" %}" />
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.MousePosition/src/L.Control.MousePosition.css" %}" />
+	<link rel="stylesheet" href="{% static "django_fulcrum/LeafletMiniMap/src/Control.MiniMap.css" %}" />
     <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/LeafletLocateControl/src/L.Control.Locate.css" %}"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.ZoomHome/dist/leaflet.zoomhome.css" %}"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.EasyButton/src/easy-button.css" %}"/>
-	<link rel="stylesheet" href="{% static "djfulcrum/Leaflet.ZoomBox/L.Control.ZoomBox.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/LeafletLocateControl/src/L.Control.Locate.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.ZoomHome/dist/leaflet.zoomhome.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.EasyButton/src/easy-button.css" %}"/>
+	<link rel="stylesheet" href="{% static "django_fulcrum/Leaflet.ZoomBox/L.Control.ZoomBox.css" %}"/>
 	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
 
 	<style>
@@ -195,12 +195,12 @@
 	<script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 	<script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js"></script>
-	<script src="{% static "djfulcrum/Leaflet.MousePosition/src/L.Control.MousePosition.js" %}"></script>
-    <script src="{% static "djfulcrum/LeafletMiniMap/src/Control.MiniMap.js" %}"></script>
-    <script src="{% static "djfulcrum/LeafletLocateControl/src/L.Control.Locate.js" %}"></script>
-    <script src="{% static "djfulcrum/Leaflet.ZoomHome/dist/leaflet.zoomhome.js" %}"></script>
-    <script src="{% static "djfulcrum/Leaflet.EasyButton/src/easy-button.js" %}"></script>
-	<script src="{% static "djfulcrum/Leaflet.ZoomBox/L.Control.ZoomBox.min.js" %}"></script>
+	<script src="{% static "django_fulcrum/Leaflet.MousePosition/src/L.Control.MousePosition.js" %}"></script>
+    <script src="{% static "django_fulcrum/LeafletMiniMap/src/Control.MiniMap.js" %}"></script>
+    <script src="{% static "django_fulcrum/LeafletLocateControl/src/L.Control.Locate.js" %}"></script>
+    <script src="{% static "django_fulcrum/Leaflet.ZoomHome/dist/leaflet.zoomhome.js" %}"></script>
+    <script src="{% static "django_fulcrum/Leaflet.EasyButton/src/easy-button.js" %}"></script>
+	<script src="{% static "django_fulcrum/Leaflet.ZoomBox/L.Control.ZoomBox.min.js" %}"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
 	
     <script>
@@ -291,7 +291,7 @@
 		
 		// Gets list of available layers //
 		$.ajax({
-			url : '/djfulcrum/layers',
+			url : '/django_fulcrum/layers',
 			dataType: "json",
 			success : function(result) {
 				updateLayers(result);
@@ -313,7 +313,7 @@
 						}
 					};
 					layers[key] = L.geoJson(false);
-					layerUrls[key] = '/djfulcrum/geojson?layer=' + key;
+					layerUrls[key] = '/django_fulcrum/geojson?layer=' + key;
 					console.log(layerUrls[key]);
 				}
 			}
@@ -912,7 +912,7 @@
 			map.doubleClickZoom.enable();
             var formData = new FormData($('#fileUpload')[0]);
             $.ajax({
-                url: '/djfulcrum/upload',  //Server script to process data
+                url: '/django_fulcrum/upload',  //Server script to process data
                 type: 'POST',
                 xhr: function() {  // Custom XMLHttpRequest
                     var myXhr = $.ajaxSettings.xhr();
