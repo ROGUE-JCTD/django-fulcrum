@@ -89,7 +89,8 @@ def task_filter_features(filter_name, features, run_once=False, run_time=None):
     from .models import Filter, Layer
     from .filters.run_filters import filter_features
 
-    check_filters()
+    if not check_filters():
+        return False
 
     task_name = "django_fulcrum.tasks.task_filter_features"
     filter_lock_expire = 60 * 60

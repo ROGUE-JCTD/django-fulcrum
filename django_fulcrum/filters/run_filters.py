@@ -113,7 +113,8 @@ def check_filters():
                 try:
                     mod = import_module('django_fulcrum.filters.' + str(filter_file.rstrip('.py')))
                     if 'setup_filter_model' in dir(mod):
-                        mod.setup_filter_model()
+                        if not mod.setup_filter_model():
+                            return False
                 except ImportError:
                     return False
         cache.set(lock_id, True, 20)
