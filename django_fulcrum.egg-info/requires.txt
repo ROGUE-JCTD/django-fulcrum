@@ -3,7 +3,7 @@ django-celery
 fulcrum
 python-memcached
 boto3
-Pillow<=2.9.0
+Pillow
 django
 gsconfig
 requests

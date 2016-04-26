@@ -2,11 +2,11 @@ Metadata-Version: 1.1
 Name: django-fulcrum
 Version: 1.0.0
 Summary: Ingest Fulcrum data to django app
-Home-page: https://github.com/venicegeo/fm-mvp
+Home-page: https://github.com/ROGUE-JCTD/django-fulcrum/
 Author: Radiant Blue
 Author-email: venice@radiantblue.com
 License: See LICENSE file.
-Download-URL: https://github.com/venicegeo/fm-mvp
+Download-URL: https://github.com/ROGUE-JCTD/django-fulcrum/
 Description: # django-fulcrum
         
         This is a django application which allows the user to connect to a Fulcrumapp.com and ingest data, including all media files.
@@ -60,7 +60,7 @@ Description: # django-fulcrum
         SSH into the VM and run the following commands
         ```
         cd /tmp
-        wget https://raw.githubusercontent.com/venicegeo/fm-mvp/master/mvp/django_fulcrum/scripts/geoshape_fulcrum_install.sh -O- | tr -d '\r' > /tmp/geoshape_fulcrum_install.sh
+        wget https://raw.githubusercontent.com/ROGUE-JCTD/django-fulcrum/master/django_fulcrum/scripts/geoshape_fulcrum_install.sh -O- | tr -d '\r' > /tmp/geoshape_fulcrum_install.sh
         sudo bash /tmp/geoshape_fulcrum_install.sh
         ```
         
