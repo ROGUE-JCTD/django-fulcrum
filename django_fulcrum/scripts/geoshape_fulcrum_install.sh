@@ -6,7 +6,6 @@ cd ~
 yum install unzip -y
 wget -O initialMigration.zip https://github.com/ROGUE-JCTD/django-fulcrum/archive/initialMigration.zip
 unzip initialMigration.zip
-django-fulcrum-initialMigration/dist/
 mv -f django-fulcrum-initialMigration/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
 chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
 rm -rf initialMigration.zip
