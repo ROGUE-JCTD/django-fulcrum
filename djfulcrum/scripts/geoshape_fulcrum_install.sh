@@ -4,13 +4,14 @@
 #add to /var/lib/geonode/rogue_geonode/geoshape/settings.py: 
 cd ~
 yum install unzip -y
-wget https://github.com/venicegeo/fm-mvp/archive/master.zip
-# wget https://github.com/venicegeo/fm-mvp/archive/master.zip
-unzip master.zip
-mv -f fm-mvp-master/mvp/djfulcrum /var/lib/geonode/lib/python2.7/site-packages/
-chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/djfulcrum
-rm master.zip
-rm -rf master
+wget https://github.com/ROGUE-JCTD/django-fulcrum/archive/initialMigration.zip
+unzip initialMigration.zip
+
+/var/lib/geonode/bin/python django-fulcrum-initialMigration/setup.py install
+#mv -f fm-mvp-master/mvp/djfulcrum /var/lib/geonode/lib/python2.7/site-packages/
+#chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/djfulcrum
+rm initialMigration.zip
+rm -rf initialMigration
 
 mkdir /var/lib/geonode/fulcrum_data
 chown geoshape:geoservice /var/lib/geonode/fulcrum_data
@@ -18,11 +19,10 @@ yum install memcached -y
 service memcached start
 chkconfig memcached on
 
-/var/lib/geonode/bin/pip install djfulcrum
-/var/lib/geonode/bin/pip install fulcrum
-/var/lib/geonode/bin/pip install python-memcached
-/var/lib/geonode/bin/pip install boto3
-/var/lib/geonode/bin/pip install Pillow
+#/var/lib/geonode/bin/pip install fulcrum
+#/var/lib/geonode/bin/pip install python-memcached
+#/var/lib/geonode/bin/pip install boto3
+#/var/lib/geonode/bin/pip install Pillow
 grep -qF "INSTALLED_APPS += ('djfulcrum',)" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "INSTALLED_APPS += ('djfulcrum',)" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
 
 # change permissions to file_service folder so that djfulcrum can add data to the folder.
