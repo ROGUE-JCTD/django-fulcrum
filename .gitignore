@@ -24,5 +24,4 @@ django_fulcrum/tests/test_geojson.json
 build/
 init.py*
 manage.py
-__init__.py
 *~
