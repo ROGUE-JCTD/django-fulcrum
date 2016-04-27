@@ -996,8 +996,8 @@ def prepare_features_for_geoshape(feature_data, media_keys=None):
             if not feature.get('properties').get(prop):
                 feature['properties'][prop] = ''
             for mmkey in maploom_media_keys:
-                if prop.startswith(mmkey):
-                    new_props['_{}'.format(prop)] = feature.get('properties').get(prop)
+                if prop.startswith(mmkey) and prop not in media_keys:
+                    new_props['prop_{}'.format(prop)] = feature.get('properties').get(prop)
                     delete_prop += [prop]
         feature['properties'].update(new_props)
         for media_key, media_val in media_keys.iteritems():
@@ -1664,12 +1664,25 @@ def get_ogc_server(alias=None):
 
 
 def initialize_sqlite_db(cursor):
+    """
+
+    Args:
+        cursor: A database cursor object
+    """
     results = cursor.execute("SELECT * from sqlite_master LIMIT 1")
     if not results.fetchone():
         cursor.execute("CREATE TABLE 'temp'('Field1' INTEGER);")
 
 
 def get_field_map(features):
+    """
+
+    Args:
+        features: An array of features
+
+    Returns: A mapping of all of the available fields in the entire geojson.
+
+    """
     field_map = {}
     for feature in features:
         if not feature.get('properties'):
@@ -1681,6 +1694,14 @@ def get_field_map(features):
 
 
 def get_prototype(field_map):
+    """
+
+    Args:
+        field_map: A mapping of all of the fields available and types as a dict.
+        see get_field_map.
+
+    Returns: A prototypical dict representing every possible field with default json values.
+    """
     prototype = {}
     for key, value in field_map.iteritems():
         if isinstance(value, int):
@@ -1693,6 +1714,12 @@ def get_prototype(field_map):
 
 
 def delete_feature(feature_uid):
+    """
+
+    Args:
+        feature_uid: An id (presumable the fulcrum_id) of an object to remove from the django-fulcrum database.
+
+    """
     if getattr(settings, 'DATABASES', {}).get('fulcrum'):
         database_alias = 'fulcrum'
     else:
