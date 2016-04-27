@@ -1,0 +1,24 @@
+{% extends "admin/base_site.html" %}
+{% load i18n l10n admin_urls %}
+{% block content %}
+
+
+<form id="form" action ="" method="post">{% csrf_token %}
+
+    <p>
+        </br>'Filter previous' is destructive and will permanently delete points and/or media files.
+        </br>Filtered points can not be recovered, unless they are downloaded again from FulcrumApp.
+        </br>Are you sure you want to filter previous?
+        </br>
+    </p>
+
+    {{ formset.management_form }}
+        {% for key, values in formset.items %}
+        <input type="hidden" name="{{ key }}" value="{{ values }}"/>
+        {% endfor %}
+    <div>
+    <input type="submit" name="post" value="{% trans "Yes" %}"/>
+    <input type="submit" name="post" value="{% trans "No" %}"/>
+    </div>
+</form>
+{% endblock %}

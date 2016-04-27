@@ -1,0 +1,11 @@
+celery
+django-celery
+fulcrum
+python-memcached
+boto3
+Pillow
+django
+gsconfig
+requests
+shapely
+gdal
