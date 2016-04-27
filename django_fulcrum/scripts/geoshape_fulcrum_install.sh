@@ -4,12 +4,12 @@
 #add to /var/lib/geonode/rogue_geonode/geoshape/settings.py: 
 cd ~
 yum install unzip -y
-wget -O initialMigration.zip https://github.com/ROGUE-JCTD/django-fulcrum/archive/initialMigration.zip
-unzip initialMigration.zip
-mv -f django-fulcrum-initialMigration/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
+wget -O master.zip https://github.com/ROGUE-JCTD/django-fulcrum/archive/master.zip
+unzip master.zip
+mv -f django-fulcrum-master/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
 chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
-rm -rf initialMigration.zip
-rm -rf initialMigration
+rm -rf master.zip
+rm -rf master
 
 mkdir /var/lib/geonode/fulcrum_data
 chown geoshape:geoservice /var/lib/geonode/fulcrum_data
