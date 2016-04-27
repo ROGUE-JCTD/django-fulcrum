@@ -99,6 +99,8 @@ def check_filters():
         lock_id = get_lock_id('list-filters-success')
         if cache.get(lock_id):
             return True
+        if not check_init():
+            return False
         for filter_file in files:
             if filter_file.endswith('.py'):
                 if filter_file == 'run_filters.py' or filter_file == '__init__.py':
@@ -119,3 +121,24 @@ def check_filters():
                     return False
         cache.set(lock_id, True, 20)
         return True
+
+def check_init():
+    """
+
+    Returns: True if the super admin was created.
+
+    """
+    try:
+        from .tasks import task_update_layers, pull_s3_data
+    except AppRegistryNotReady:
+        django.setup()
+        from .tasks import task_update_layers, pull_s3_data
+    try:
+        try:
+            from django.contrib.auth.models import User
+        except ImproperlyConfigured:
+            pass
+        if User.objects.filter(id=1):
+            return True
+    except OperationalError:
+        return False
