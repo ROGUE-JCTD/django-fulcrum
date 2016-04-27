@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 import os
 from importlib import import_module
+from django.core.exceptions import AppRegistryNotReady, ImproperlyConfigured
+from django.db import OperationalError
 
 
 def filter_features(features, filter_name=None, run_once=False):
