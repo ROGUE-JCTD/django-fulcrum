@@ -117,7 +117,7 @@ def check_filters():
                 try:
                     mod = import_module('django_fulcrum.filters.' + str(filter_file.rstrip('.py')))
                     if 'setup_filter_model' in dir(mod):
-                        if not mod.setup_filter_model():
+                        if mod.setup_filter_model() is False:
                             return False
                 except ImportError:
                     return False

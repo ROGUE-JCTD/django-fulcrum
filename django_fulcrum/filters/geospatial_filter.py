@@ -37,9 +37,12 @@ def iterate_geojson(input_features, filter_inclusion=None, **kwargs):
     features = input_features.get("features")
     linked_filter, filter_list = create_filter_list(**kwargs)
     if not linked_filter:
+        if not filter_list:
+            print("The database hasn't been updated, features cannot yet be imported.")
+            return False
         if filter_inclusion is None:
             print('The filter has not been linked to a filter_name.')
-            return
+            return False
     else:
         filter_inclusion = linked_filter.filter_inclusion
     for feature in features:
@@ -81,6 +84,8 @@ def create_filter_list(boundary_features=None):
         for filter_area in FilterArea.objects.all():
             boundaries = get_boundary_features(geojson=filter_area.filter_area_data,
                                                buffer_dist=filter_area.filter_area_buffer)
+            if boundaries is False:
+                return None, None
             if filter_area.filter_area_enabled:
                 filter_list += [boundaries]
         geospatial_filters = FilterArea.objects.all()
@@ -164,4 +169,5 @@ def get_boundary_features(geojson, buffer_dist):
                     boundaries += [geometry]
     except ValueError:
         print "Error getting polygon data"
+        return False
     return boundaries
