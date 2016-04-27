@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import os
 from importlib import import_module
-from django.core.exceptions import AppRegistryNotReady, ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
 
 
@@ -122,7 +122,7 @@ def check_filters():
                 except ImportError:
                     return False
         cache.set(lock_id, True, 20)
-        return True
+    return True
 
 def check_init():
     """
@@ -131,16 +131,22 @@ def check_init():
 
     """
     try:
-        from .tasks import task_update_layers, pull_s3_data
-    except AppRegistryNotReady:
-        django.setup()
-        from .tasks import task_update_layers, pull_s3_data
+        from django.core.exceptions import AppRegistryNotReady
+        try:
+            from .tasks import task_update_layers, pull_s3_data
+        except AppRegistryNotReady:
+            django.setup()
+            from .tasks import task_update_layers, pull_s3_data
+    except ImportError:
+        pass
     try:
         try:
-            from django.contrib.auth.models import User
+            # from django.contrib.auth.models import User
+            from django.contrib.auth import get_user_model
+            user = get_user_model()
+            if user.objects.filter(id='-1').exists() or user.objects.filter(id='1').exists():
+                return True
         except ImproperlyConfigured:
-            pass
-        if User.objects.filter(id=1):
-            return True
+            return False
     except OperationalError:
         return False

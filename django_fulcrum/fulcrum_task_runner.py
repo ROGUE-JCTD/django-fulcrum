@@ -42,13 +42,14 @@ class FulcrumTaskRunner:
             try:
                 try:
                     from django.contrib.auth.models import User
+                    User = get_user_model()
+                    if User.objects.filter(id=-1).exists() or User.objects.filter(id=1).exists():
+                        print("Updating Layers...")
+                        task_update_layers()
+                        print("Pulling S3 Data...")
+                        pull_s3_data()
                 except ImproperlyConfigured:
                     pass
-                if User.objects.filter(id=1):
-                    print("Updating Layers...")
-                    task_update_layers()
-                    print("Pulling S3 Data...")
-                    pull_s3_data()
             except OperationalError as e:
                 print("Database isn't ready yet.")
                 print(e.message)
