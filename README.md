@@ -230,7 +230,6 @@ To import data you can (all of which will be run through existing filters):
  Note that zip files are extracted and imported.  Extracted files are deleted but zip files are left in the FULCRUM_UPLOAD folder.
  The advantage of using the API key is that all of your data will be downloaded and updated automatically. Furthermore it includes videos and audio files that historically have not been included in Fulcrum exports.
 
-
 ## Known Issues
 - Tiles are completely dumped when a layer is updated.  This is because the GWC bounding box tools was unsuccessful during various attempts even using their built in web tool.  This solution while inefficient is probably ok for static datasets and rarely updated data, as opposed to just not caching tiles at all.
 
