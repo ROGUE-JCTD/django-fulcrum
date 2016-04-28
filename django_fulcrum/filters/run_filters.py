@@ -83,6 +83,18 @@ def filter_features(features, filter_name=None, run_once=False):
     return features, filtered_feature_count
 
 
+def test_filters():
+    feature = {
+      "type": "Feature",
+      "properties": {"test": "test"},
+      "geometry": {
+        "type": "Point",
+        "coordinates": [0,0]}
+    }
+    if filter_features({"features":[feature]}, run_once=True):
+        return True
+
+
 def check_filters():
     """
     Returns: True if checking the filters was successful.
@@ -121,8 +133,10 @@ def check_filters():
                             return False
                 except ImportError:
                     return False
+        test_filters()
         cache.set(lock_id, True, 20)
     return True
+
 
 def check_init():
     """

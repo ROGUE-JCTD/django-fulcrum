@@ -140,7 +140,7 @@ def setup_filter_model():
                             filter_area.filter_area_data = file_data.read()
                             filter_area.save()
             except IntegrityError:
-                continue
+                return False
     return True
 
 
