@@ -134,6 +134,16 @@ class Layer(models.Model):
         unique_together = (("layer_name", "layer_uid"),)
 
 
+class Changesets(models.Model):
+    """structure to hold information about changesets"""
+    changeset_uid = models.CharField(max_length=100)
+    changeset_form_id = models.CharField(max_length=100)
+    changeset_created_at = models.DateTimeField(default=timezone.now())
+    changeset_updated_at = models.DateTimeField(default=timezone.now())
+    changeset_number_of_changes = models.IntegerField(default=1)
+    changeset_comment = models.TextField(default="")
+
+
 class Feature(models.Model):
     """Structure to hold information about and actual feature data."""
     feature_uid = models.CharField(max_length=100)
@@ -141,6 +151,7 @@ class Feature(models.Model):
     layer = models.ForeignKey(Layer, on_delete=models.CASCADE, default="")
     feature_data = models.TextField()
     feature_added_time = models.DateTimeField(default=timezone.now())
+    feature_changeset = models.ForeignKey(Changesets, default=None, blank=True, null=True)
 
     class Meta:
         unique_together = (("feature_uid", "feature_version"),)
