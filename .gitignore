@@ -1,3 +1,4 @@
+django_fulcrum_env
 mvp_env
 assets/*
 *.sqlite*
