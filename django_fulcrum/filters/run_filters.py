@@ -41,7 +41,6 @@ def filter_features(features, filter_name=None, run_once=False):
                         try:
                             module_name = 'django_fulcrum.filters.' + str(filter_model.filter_name.rstrip('.py'))
                             mod = import_module(module_name)
-                            print "Running: {}".format(filter_model.filter_name)
                             filtered_results = mod.filter_features(features)
                         except ImportError:
                             print "Could not filter features - ImportError"
@@ -83,18 +82,6 @@ def filter_features(features, filter_name=None, run_once=False):
     return features, filtered_feature_count
 
 
-def test_filters():
-    feature = {
-      "type": "Feature",
-      "properties": {"test": "test"},
-      "geometry": {
-        "type": "Point",
-        "coordinates": [0,0]}
-    }
-    if filter_features({"features":[feature]}, run_once=True):
-        return True
-
-
 def check_filters():
     """
     Returns: True if checking the filters was successful.
@@ -133,7 +120,6 @@ def check_filters():
                             return False
                 except ImportError:
                     return False
-        test_filters()
         cache.set(lock_id, True, 20)
     return True
 

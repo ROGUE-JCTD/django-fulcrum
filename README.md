@@ -30,18 +30,13 @@ There are two different types of installation instructions.  A set of instructio
 
 ### geoshape-vagrant setup
 
-Download the geoshape-vagrant repo.
-```
-https://github.com/ROGUE-JCTD/geoshape-vagrant
-```
-
 In an elevated session (sudo or "run as administrator),
 change directories to the geoshape-vagrant repo, and install the vagrant hosts updater
 ```
 vagrant plugin install vagrant-hostsupdater
 ```
 
-Copy the vagrant files from fm-mvp/vagrant_files into your geoshape-vagrant folder.  Also ensure that your geoshape vagrant folder exists on a large disk since by default the scripts will create a disk with a 500 GB capacity (thin provisioned).  
+Copy the vagrant files from django_fulcrum/scripts/geoshape-django_fulcrum-vagrant into a folder.  Also ensure that your geoshape vagrant folder exists on a large disk since by default the scripts will create a disk with a 500 GB capacity (thin provisioned).
 
 Bring up the geoshape vm.
 ```

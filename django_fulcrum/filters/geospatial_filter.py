@@ -37,9 +37,6 @@ def iterate_geojson(input_features, filter_inclusion=None, **kwargs):
     features = input_features.get("features")
     linked_filter, filter_list = create_filter_list(**kwargs)
     if not linked_filter:
-        if not filter_list:
-            print("The database hasn't been updated, features cannot yet be imported.")
-            return False
         if filter_inclusion is None:
             print('The filter has not been linked to a filter_name.')
             return False
@@ -77,24 +74,19 @@ def iterate_geojson(input_features, filter_inclusion=None, **kwargs):
 def create_filter_list(boundary_features=None):
     from ..models import FilterArea
     filter_list = []
+    linked_filter = None
     if boundary_features:
         filter_list += boundary_features
         return None, filter_list
     else:
         for filter_area in FilterArea.objects.all():
+            linked_filter = filter_area.filter
             boundaries = get_boundary_features(geojson=filter_area.filter_area_data,
                                                buffer_dist=filter_area.filter_area_buffer)
             if boundaries is False:
                 return None, None
             if filter_area.filter_area_enabled:
                 filter_list += [boundaries]
-        geospatial_filters = FilterArea.objects.all()
-        try:
-            linked_filter = geospatial_filters[0].filter
-        except IndexError:
-            linked_filter = None
-        except ValueError:
-            linked_filter = None
         return linked_filter, filter_list
 
 
@@ -131,14 +123,13 @@ def setup_filter_model():
         if boundary_file.endswith('.geojson'):
             try:
                 filter_area_names = FilterArea.objects.filter(filter_area_name__iexact=boundary_file)
-                if not filter_area_names.exists():
-                    FilterArea.objects.create(filter_area_name=boundary_file, filter=geospatial_filter)
+                if filter_area_names.exists():
+                    filter_area = filter_area_names[0]
                 else:
-                    with transaction.atomic():
-                        filter_area = filter_area_names[0]
-                        with open(os.path.join(boundary_file_path, boundary_file)) as file_data:
-                            filter_area.filter_area_data = file_data.read()
-                            filter_area.save()
+                    filter_area = FilterArea.objects.create(filter_area_name=boundary_file, filter=geospatial_filter)
+                with open(os.path.join(boundary_file_path, boundary_file)) as file_data:
+                    filter_area.filter_area_data = file_data.read()
+                    filter_area.save()
             except IntegrityError:
                 return False
     return True

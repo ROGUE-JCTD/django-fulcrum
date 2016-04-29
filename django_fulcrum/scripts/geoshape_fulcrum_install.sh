@@ -4,12 +4,13 @@
 #add to /var/lib/geonode/rogue_geonode/geoshape/settings.py: 
 cd ~
 yum install unzip -y
-wget -O master.zip https://github.com/ROGUE-JCTD/django-fulcrum/archive/master.zip
-unzip master.zip
-mv -f django-fulcrum-master/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
+wget -O fixErrorGettingPolygon.zip https://github.com/ROGUE-JCTD/django-fulcrum/archive/fixErrorGettingPolygon.zip
+unzip fixErrorGettingPolygon.zip
+mv -f django-fulcrum-fixErrorGettingPolygon/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
 chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
-rm -rf master.zip
-rm -rf master
+chmod 755 -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
+rm -rf fixErrorGettingPolygon.zip
+rm -rf fixErrorGettingPolygon
 
 mkdir /var/lib/geonode/fulcrum_data
 chown geoshape:geoservice /var/lib/geonode/fulcrum_data
