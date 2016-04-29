@@ -41,7 +41,6 @@ def filter_features(features, filter_name=None, run_once=False):
                         try:
                             module_name = 'django_fulcrum.filters.' + str(filter_model.filter_name.rstrip('.py'))
                             mod = import_module(module_name)
-                            print "Running: {}".format(filter_model.filter_name)
                             filtered_results = mod.filter_features(features)
                         except ImportError:
                             print "Could not filter features - ImportError"
@@ -123,6 +122,7 @@ def check_filters():
                     return False
         cache.set(lock_id, True, 20)
     return True
+
 
 def check_init():
     """

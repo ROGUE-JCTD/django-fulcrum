@@ -30,18 +30,13 @@ There are two different types of installation instructions.  A set of instructio
 
 ### geoshape-vagrant setup
 
-Download the geoshape-vagrant repo.
-```
-https://github.com/ROGUE-JCTD/geoshape-vagrant
-```
-
 In an elevated session (sudo or "run as administrator),
 change directories to the geoshape-vagrant repo, and install the vagrant hosts updater
 ```
 vagrant plugin install vagrant-hostsupdater
 ```
 
-Copy the vagrant files from fm-mvp/vagrant_files into your geoshape-vagrant folder.  Also ensure that your geoshape vagrant folder exists on a large disk since by default the scripts will create a disk with a 500 GB capacity (thin provisioned).  
+Copy the vagrant files from django_fulcrum/scripts/geoshape-django_fulcrum-vagrant into a folder.  Also ensure that your geoshape vagrant folder exists on a large disk since by default the scripts will create a disk with a 500 GB capacity (thin provisioned).
 
 Bring up the geoshape vm.
 ```
@@ -229,7 +224,6 @@ To import data you can (all of which will be run through existing filters):
  - Enter FulcrumApp API key to download the data directly from Fulcrum.  (Recommended)
  Note that zip files are extracted and imported.  Extracted files are deleted but zip files are left in the FULCRUM_UPLOAD folder.
  The advantage of using the API key is that all of your data will be downloaded and updated automatically. Furthermore it includes videos and audio files that historically have not been included in Fulcrum exports.
-
 
 ## Known Issues
 - Tiles are completely dumped when a layer is updated.  This is because the GWC bounding box tools was unsuccessful during various attempts even using their built in web tool.  This solution while inefficient is probably ok for static datasets and rarely updated data, as opposed to just not caching tiles at all.

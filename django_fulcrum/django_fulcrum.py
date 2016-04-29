@@ -1131,14 +1131,6 @@ def ogr2ogr_geojson_to_db(geojson_file, database_alias=None, table=None):
         options = ['-update', '-append']
     else:
         return True
-    # db_format = 'SQLite'
-    #     sqlite_file = db_conn.settings_dict.get('NAME')
-    #     dest = '{}'.format(sqlite_file)
-    #     options = ['-update','-append']
-    #     with db_conn.cursor() as cur:
-    #         initialize_sqlite_db(cur)
-    #     db_conn.commit()
-    # db_conn.close()
 
     execute_append = ['',
                       '-f', db_format,
