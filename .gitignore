@@ -1,5 +1,6 @@
 django_fulcrum_env
 mvp_env
+django_fulcrum_env
 assets/*
 *.sqlite*
 fulcrum_data/*
