@@ -105,7 +105,6 @@ class DjangoFulcrum:
         changesets_dict = {}
         try:
             changesets_query = Changesets.objects.all()
-            count=0
             for changeset in changesets_query:
                 changesets_dict[changeset.changeset_uid] = changeset
             return changesets_dict
@@ -179,7 +178,6 @@ class DjangoFulcrum:
         media_map = self.get_media_map(form, element_map)
         layer = Layer.objects.get(layer_uid=form.get('id'))
         changeset_dict = self.get_all_changesets()
-        print "Number of changesets in dict: {}".format(len(changeset_dict))
 
         if layer:
             records = self.get_latest_records(layer)
@@ -246,10 +244,8 @@ class DjangoFulcrum:
                                     else:
                                         feature['properties']['{}'.format(media_key)] += []
                     if feature.get('properties').get('changeset_id') and feature.get('properties').get('changeset_id') in changeset_dict:
-                            changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
-                            print changeset_id
+                        changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
                     else:
-                        print "changeset is none"
                         changeset_id = None
                     write_feature(feature.get('properties').get('fulcrum_id'),
                                   feature.get('properties').get('version'),
@@ -456,8 +452,6 @@ class DjangoFulcrum:
                 else:
                     continue
                 yield features.get('features')
-        else:
-            print "No changesets to sort by"
         features_without_changeset = Feature.objects.all().filter(feature_changeset=None)
         features = self.feature_queryset_to_geojson(features_without_changeset)
 
