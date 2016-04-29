@@ -6,7 +6,7 @@ cd ~
 yum install unzip -y
 wget -O master.zip https://github.com/ROGUE-JCTD/django-fulcrum/archive/master.zip
 unzip master.zip
-mv -f django-fulcrum-fixErrorGettingPolygon/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
+mv -f django-fulcrum-master/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
 chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
 chmod 755 -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
 rm -rf master.zip
