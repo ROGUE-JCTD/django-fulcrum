@@ -101,8 +101,7 @@ def setup_filter_model():
     try:
         filter_area_names = TextFilter.objects.filter(filter=text_filter)
         if not filter_area_names.exists():
-            with transaction.atomic():
-                TextFilter.objects.create(filter=text_filter)
+            TextFilter.objects.create(filter=text_filter)
     except IntegrityError:
         pass
     return True

@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+	config.vm.box = "bento/centos-6.7"
+	config.vm.provision :shell, path: "scripts/bootstrap.sh"
+
+	## create a private network visible only to the host machine
+	config.vm.network :private_network, ip: "192.168.99.110"
+	config.vm.hostname = "geoshape.dev"
+
+	## assign a static ip visible to others on the network.
+	# config.vm.network :public_network, :bridge => 'en0: Wi-Fi (AirPort)', ip: "192.168.10.222", netmask: "255.255.255.0"
+
+	# Example of share an additional folder to the guest VM.
+ 	# config.vm.synced_folder "F:/django-fulcrum/django_fulcrum", "/var/lib/geonode/lib/python2.7/site-packages/django_fulcrum"	
+	# owner: "geoshape", group: "geoservice"
+
+	file_to_disk = './tmp/large_disk.vdi'
+	
+	config.vm.provider "virtualbox" do |vb|
+		vb.customize ["modifyvm", :id, "--memory", "4096", "--cpus", "2"]
+		unless File.exist?(file_to_disk)
+			vb.customize ['createhd', '--filename', file_to_disk, '--size', 500 * 1024]
+			vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', file_to_disk]
+		end
+	end
+				
+end
