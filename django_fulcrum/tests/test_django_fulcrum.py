@@ -778,7 +778,7 @@ class DjangoFulcrumDBTests(TransactionTestCase):
         features_query = get_features_by_changeset(changeset)
         self.assertEqual(feature, features_query[0])
 
-    def test_feature_queryset_to_geojson(self):
+    def test_get_geojson_from_queryset(self):
         expected_geojson = {"type": "FeatureCollection",
                             "features": [
                                 {"type": "Feature",
@@ -806,7 +806,7 @@ class DjangoFulcrumDBTests(TransactionTestCase):
                           feature_changeset=None)
         feature.save()
         feature_queryset_data = Feature.objects.all()
-        feature_data = feature_queryset_to_geojson(feature_queryset_data)
+        feature_data = get_geojson_from_queryset(feature_queryset_data)
         self.assertEqual(expected_geojson, feature_data)
 
     def test_write_changesets_to_db(self):

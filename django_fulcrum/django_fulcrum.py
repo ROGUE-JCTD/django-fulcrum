@@ -460,7 +460,7 @@ def get_features_by_changeset(changeset):
         return None
 
 
-def feature_queryset_to_geojson(feature_queryset):
+def get_geojson_from_queryset(feature_queryset):
     """
         Function to convert django queryset to geojson feature collection
     Args:
@@ -501,12 +501,12 @@ def changeset_chunks(form_id):
         for changeset in changesets:
             model_features = get_features_by_changeset(changeset)
             if model_features:
-                features = feature_queryset_to_geojson(model_features)
+                features = get_geojson_from_queryset(model_features)
             else:
                 continue
             yield features.get('features')
     features_without_changeset = Feature.objects.all().filter(feature_changeset=None).order_by('feature_added_time')
-    features = feature_queryset_to_geojson(features_without_changeset)
+    features = get_geojson_from_queryset(features_without_changeset)
 
     for i in xrange(0, len(features.get('features')), 100):
         yield features.get('features')[i:i + 100]
