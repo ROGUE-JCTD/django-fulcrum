@@ -505,7 +505,7 @@ def changeset_chunks(form_id):
             else:
                 continue
             yield features.get('features')
-    features_without_changeset = Feature.objects.all().filter(feature_changeset=None)
+    features_without_changeset = Feature.objects.all().filter(feature_changeset=None).order_by('feature_added_time')
     features = feature_queryset_to_geojson(features_without_changeset)
 
     for i in xrange(0, len(features.get('features')), 100):

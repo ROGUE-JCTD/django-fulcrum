@@ -784,7 +784,7 @@ class DjangoFulcrumDBTests(TransactionTestCase):
                                 {"type": "Feature",
                                  "geometry": {
                                      "type": "Point",
-                                     "coordinates": [25.0,25.0]
+                                     "coordinates": [25.0, 25.0]
                                  },
                                  "properties": {
                                      "prop0": "value0",
@@ -834,27 +834,45 @@ class DjangoFulcrumDBTests(TransactionTestCase):
         write_changesets_to_db(changesets_list=changeset_list2, form_id=form_id2, geojson=geojson2)
         self.assertIsNotNone(Changesets.objects.all().filter(changeset_uid='594e8996-cda3-4902-b60b-46d7e5fd9999'))
 
+    def test_changeset_chunks(self):
+        required_layer = Layer(layer_name="layer",
+                               layer_uid="layer_uid",
+                               layer_date=0,
+                               layer_media_keys="{}")
+        required_layer.save()
+        changeset = Changesets(changeset_uid='asdf-ghjk-poiuy',
+                               changeset_form_id='yuio-vbnm-zxcv',
+                               changeset_created_at='2016-04-29T11:23:52Z',
+                               changeset_updated_at='2016-04-29T11:23:52Z',
+                               changeset_number_of_changes=1,
+                               changeset_comment="This is a comment")
+        changeset.save()
+        changeset2 = Changesets(changeset_uid='asdf-ghjk-qwerty',
+                               changeset_form_id='yuio-vbnm-zxcv',
+                               changeset_created_at='2016-04-29T11:23:52Z',
+                               changeset_updated_at='2016-04-29T11:23:52Z',
+                               changeset_number_of_changes=1,
+                               changeset_comment="This is a comment")
+        changeset2.save()
 
-    # def test_changeset_chunks(self):
-    #     required_layer = Layer(layer_name="layer",
-    #                            layer_uid="layer_uid",
-    #                            layer_date=0,
-    #                            layer_media_keys="{}")
-    #     required_layer.save()
-    #     changeset = Changesets(changeset_uid='asdf-ghjk-poiuy',
-    #                            changeset_form_id='yuio-vbnm-zxcv',
-    #                            changeset_created_at='2016-04-29T11:23:52Z',
-    #                            changeset_updated_at='2016-04-29T11:23:52Z',
-    #                            changeset_number_of_changes=1,
-    #                            changeset_comment="This is a comment")
-    #     changeset.save()
-    #     changeset2 = Changesets(changeset_uid='asdf-ghjk-qwerty',
-    #                            changeset_form_id='yuio-vbnm-zxcv',
-    #                            changeset_created_at='2016-04-29T11:23:52Z',
-    #                            changeset_updated_at='2016-04-29T11:23:52Z',
-    #                            changeset_number_of_changes=1,
-    #                            changeset_comment="This is a comment")
-    #     changeset2.save()
+        feature = Feature(feature_uid='sdfs-sasdf-adfasa',
+                          feature_version=2,
+                          layer=required_layer,
+                          feature_data=json.dumps({'properties': {'data':'my-data'}}),
+                          feature_added_time='2016-04-29T11:23:52Z',
+                          feature_changeset=changeset)
+        feature.save()
+        feature2 = Feature(feature_uid='sdfs-sasdf-adlkj',
+                          feature_version=2,
+                          layer=required_layer,
+                          feature_data=json.dumps({'properties': {'data':'my-data'}}),
+                          feature_added_time='2016-04-29T11:23:52Z',
+                          feature_changeset=changeset2)
+        feature2.save()
+
+        for grouped_features in changeset_chunks('yuio-vbnm-zxcv'):
+            self.assertEqual(len(grouped_features), 1)
+
     def test_s3_credentials_admin(self):
         """Ensure the expected structure of the s3 credentials is maintained."""
         s3_cred = S3Credential.objects.create(s3_key='key',
