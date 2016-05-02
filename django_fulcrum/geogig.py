@@ -41,7 +41,8 @@ def create_geogig_datastore(store_name):
     if not datastore:
         datastore = cat.create_datastore(store_name, workspace_name)
         datastore.connection_parameters.update(geogig_repository=os.path.join(ogc_server.get('GEOGIG_DATASTORE_DIR'),
-                                                                              store_name))
+                                                                              store_name),
+                                               branch='master')
         cat.save(datastore)
 
 
@@ -248,3 +249,36 @@ def get_xml_template():
         </wfs:Insert>\
     </wfs:Transaction>'
     return wfs_template
+
+
+# def import_pg(geogig_store_name, table):
+#     """
+#     Args:
+#         store_name: name of geogig repo
+#     Returns:
+#         None
+#     """
+#
+#     ogc_server = get_ogc_server()
+#     url = "{}/rest".format(ogc_server.get('LOCATION').rstrip('/'))
+#     workspace_name = "geonode"
+#     workspace_uri = "http://www.geonode.org/"
+#     cat = Catalog(url)
+#     # Check if local workspace exists and if not create it
+#     workspace = cat.get_workspace(workspace_name)
+#     if workspace is None:
+#         cat.create_workspace(workspace_name, workspace_uri)
+#         print "Workspace " + workspace_name + " created."
+#
+#     source_datastore = cat.get_store(ogc_server.get('name'))
+#
+#     geogig_datastore = cat.get_store(geogig_store_name)
+#     cat.add_data_to_store()
+#
+#     if not datastore:
+#         datastore = cat.create_datastore(store_name, workspace_name)
+#         datastore.connection_parameters.update(geogig_repository=os.path.join(ogc_server.get('GEOGIG_DATASTORE_DIR'),
+#                                                                               store_name),
+#                                                branch='master')
+#         cat.save(datastore)
+#     cat.add_data_to_store

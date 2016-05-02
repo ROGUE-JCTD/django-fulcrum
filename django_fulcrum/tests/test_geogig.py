@@ -19,16 +19,12 @@ from ..geogig import get_all_geogig_repos, create_geogig_datastore, create_geogi
 
 
 class DjangoFulcrumTests(TestCase):
-    def setUp(self):
-        pass
 
     def test_create_geogig_repo(self):
         new_repo = 'fulcrum_geogig'
-        # repo_dir = create_geogig_repo(new_repo)
-        # if repo_dir:
-        #     set_geoserver_permissions(repo_dir)
-        # repo = get_geogig_repo_name(new_repo)
-        # self.assertEqual(new_repo, repo)
+        repo_dir = create_geogig_repo(new_repo)
+        if repo_dir:
+            set_geoserver_permissions(repo_dir)
         repos = get_all_geogig_repos()
         create_geogig_datastore(new_repo)
         for repo in repos:
