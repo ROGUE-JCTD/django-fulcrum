@@ -454,7 +454,10 @@ def get_features_by_changeset(changeset):
         A queryset of all features with the specified changeset_id
     """
     try:
-        features = Feature.objects.all().filter(feature_changeset=changeset)
+        feature_models = Feature.objects.filter(feature_changeset=changeset)
+        features = []
+        for feature_model in feature_models:
+            features += [json.loads(feature_model.feature_data)]
         return features
     except ObjectDoesNotExist:
         return None
@@ -496,20 +499,17 @@ def changeset_chunks(form_id):
         Finally, yields any features without changesets
     """
     print "Finding all changesets with form_id == {}".format(form_id)
-    changesets = Changesets.objects.all().filter(changeset_form_id=form_id).order_by('changeset_updated_at')
-    if changesets:
+    changesets = Changesets.objects.filter(changeset_form_id=form_id).order_by('changeset_updated_at')
+    if changesets.exists():
         for changeset in changesets:
-            model_features = get_features_by_changeset(changeset)
-            if model_features:
-                features = feature_queryset_to_geojson(model_features)
-            else:
+            features = get_features_by_changeset(changeset)
+            if not features:
                 continue
-            yield features.get('features')
-    features_without_changeset = Feature.objects.all().filter(feature_changeset=None)
-    features = feature_queryset_to_geojson(features_without_changeset)
+            print("Processing changeset {} of {}...".format(changeset.changeset_uid, len(features)))
+            yield features
+    features_without_changeset = Feature.objects.filter(feature_changeset=None)
+    yield feature_queryset_to_geojson(features_without_changeset)
 
-    for i in xrange(0, len(features.get('features')), 100):
-        yield features.get('features')[i:i + 100]
 
 def chunks(a_list, chunk_size):
     """
@@ -741,13 +741,15 @@ def upload_geojson(file_path=None, geojson=None):
                       changeset_id)
         uploads += [feature]
         count += 1
-    for grouped_features in changeset_chunks(file_basename):
-        try:
-            database_alias = 'fulcrum'
-        except ConnectionDoesNotExist:
-            database_alias = None
 
-        table_name = layer.layer_name
+    try:
+        database_alias = 'fulcrum'
+    except ConnectionDoesNotExist:
+        database_alias = None
+
+    table_name = layer.layer_name
+
+    for grouped_features in changeset_chunks(file_basename):
         if upload_to_db(grouped_features, table_name, media_keys, database_alias=database_alias):
             publish_layer(table_name, database_alias=database_alias)
             update_geoshape_layers()
@@ -1166,6 +1168,8 @@ def prepare_features_for_geoshape(feature_data, media_keys=None):
     for feature in feature_data:
         new_props = {}
         delete_prop = []
+        if not feature.get('properties'):
+            continue
         for prop in feature.get('properties'):
             if not prop:
                 continue
@@ -1469,7 +1473,11 @@ def check_db_for_feature(feature, db_features=None):
     Returns:
         The feature if it matches, otherwise None.
     """
-    fulcrum_id = feature.get('properties').get('fulcrum_id')
+    if feature.get('properties'):
+        if feature.get('properties').get('fulcrum_id'):
+            fulcrum_id = feature.get('properties').get('fulcrum_id')
+    else:
+        return None
     if not db_features:
         return None
     if db_features.get(fulcrum_id):
