@@ -728,7 +728,8 @@
 	                // Options to tell jQuery not to process data or worry about content-type. //
 	                cache: false,
 	                contentType: false,
-	                processData: false
+	                processData: false,
+	                timeout: 600000
 	            });
 			}
 			else {
