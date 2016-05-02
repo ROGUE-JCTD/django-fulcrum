@@ -137,7 +137,7 @@ class Layer(models.Model):
 class Changesets(models.Model):
     """structure to hold information about changesets"""
     changeset_uid = models.CharField(max_length=100)
-    changeset_form_id = models.CharField(max_length=100)
+    changeset_form_id = models.CharField(max_length=100, default="")
     changeset_created_at = models.DateTimeField(default=timezone.now())
     changeset_updated_at = models.DateTimeField(default=timezone.now())
     changeset_number_of_changes = models.IntegerField(default=1)
