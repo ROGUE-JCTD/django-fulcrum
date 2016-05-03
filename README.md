@@ -53,6 +53,7 @@ sudo bash /tmp/geoshape_fulcrum_install.sh
 You can modify your fulcrum api key entry in /var/lib/geonode/rogue_geonode/geoshape/local_settings.py file (sudo required).
 Additionally in local_settings an S3_CREDENTIALS dict can be added and the app will pull data from an s3 bucket. For examples of these entries, refer to the settings documentation further down the page.
 Alternatively you may enter this information in the admin console.  It is more secure in the local_settings file, but the server would need to be restarted, after information is added or removed.
+If you are using a Geogig repo, you can set UPLOAD_TO_GEOGIG to True in /var/lib/geonode/rogue_geonode/geoshape/local_settings.py
 
 To allow for geoshape tile truncation on addition of new data, make sure there is a default OGC_SERVER value in the  /var/lib/geonode/rogue_genode/geoshape/local_settings.py file.
 The setting keys required for tile truncation are USER and PASSWORD. These should correspond to the username/password of your GeoServer. For an example, refer to the settings documentation further down the page.
@@ -99,7 +100,7 @@ python manage.py runserver
 
 ## Settings
 
-###-The following settings can be defined in the local_setting.py file for your project
+###-The following settings can be defined in the local_settings.py file for your project
 
 #### DATABASES: (Required)
 A database in which the geospatial data can be stored. 
@@ -133,6 +134,11 @@ Example:
     }
 ```
 
+#### UPLOAD_TO_GEOGIG: (Optional)
+Determines if data will be uploaded to a Geogig repo. This should only be set to True if you are using Geoshape with a Geogig repo.
+By default this will be set to false.
+Example: `UPLOAD_TO_GEOGIG = True`
+
 #### FULCRUM_API_KEYS: (Optional)
 The API key which allows the application access to the data in your Fulcrum account.
 Example: `FULCRUM_API_KEY= ['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx']`
@@ -153,9 +159,9 @@ Example:
     }]
 ```
 
-#### --- NOTE: For this app to be functional, you should add at least one of the options: FULCRUM_API_KEYS, FULCRUM_UPLOAD, or S3_CREDENTIALs ---
+##### --- NOTE: For this app to be functional, you should add at least one of the options: FULCRUM_API_KEYS, FULCRUM_UPLOAD, or S3_CREDENTIALs ---
 
-###-The following settings can be defined in the local_setting.py file for your project
+###-The following settings can be defined in the settings.py file for your project
 
 #### INSTALLED_APPS: (Required)
 The name of this app must be added to the installed_app variable so it can run as part of the host django project.

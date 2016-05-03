@@ -18,7 +18,7 @@
 
 from __future__ import absolute_import
 
-from .django_fulcrum import DjangoFulcrum, truncate_tiles
+from .django_fulcrum import DjangoFulcrum, truncate_tiles, changeset_chunks
 from django.conf import settings
 from django.core.cache import cache
 from celery import shared_task
@@ -136,6 +136,13 @@ def task_filter_assets(filter_name, after_time_added, run_once=False, run_time=N
         finally:
             release_lock(Filter.get_lock_id(task_name, filter_model.filter_name))
             filter_model.save()
+
+
+@shared_task(name="django_fulcrum.tasks.task_import_to_geogig")
+def task_import_to_geogig(form_id, layer_name):
+    for grouped_features in changeset_chunks(form_id, layer_name):
+        print "Here is where I would upload to geogig, if I had one :("
+        # upload to geogig
 
 
 def is_feature_task_locked():
