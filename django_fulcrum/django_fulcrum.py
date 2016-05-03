@@ -1262,6 +1262,35 @@ def ogr2ogr_geojson_to_db(geojson_file, database_alias=None, table=None):
     return False
 
 
+def ogr2ogr_geojson_to_wfs(geojson_file, url=None, layer=None):
+    """Uses an ogr2ogr script to upload a geojson file.
+
+    Args:
+        geojson_file: A geojson file.
+        url: The location of the url.
+        layer: The layer name to update.
+
+    Returns:
+        True if the file is succesfully uploaded.
+    """
+
+    if not geojson_file or not url or not layer:
+        return False
+
+    execute_append = ['',
+                      '-f', db_format,
+                      '-skipfailures',
+                      dest,
+                      '{}'.format(geojson_file),
+                      '-nln', table] + options
+    try:
+        ogr2ogr.main(execute_append)
+        return True
+    except Exception as e:
+        print str(e)
+    return False
+
+
 def add_unique_constraint(database_alias=None, table=None, key_name=None):
     """Adds a unique constraint to a table.
 

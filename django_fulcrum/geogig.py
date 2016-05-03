@@ -8,8 +8,6 @@ import os
 import subprocess
 import shutil
 import sys
-import geogigpy
-
 
 def create_geogig_datastore(store_name):
     """
@@ -53,7 +51,7 @@ def create_geogig_repo(repo_name,
     # geogigpy.Repository(repo_dir, init=True)
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
-    if os.path.exists(os.path.join(repo_dir,'.geogig')):
+    if os.path.exists(os.path.join(repo_dir, '.geogig')):
         print("Cannot create new geogig repo {}, because one already exists.".format(repo_name))
         return repo_dir
     prev_dir = os.getcwd()
@@ -91,7 +89,8 @@ def delete_geogig_repo(repo_name):
     repo_dir = os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), repo_name)
     if os.path.exists(repo_dir):
         shutil.rmtree(repo_dir)
-    repo_xml_path = os.path.join(os.path.join(os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), 'config'), 'repos'))
+    repo_xml_path = os.path.join(
+            os.path.join(os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), 'config'), 'repos'))
     if os.path.isfile(os.path.join(repo_xml_path, '{}.xml'.format(repo_id))):
         os.remove(repo_dir)
 
@@ -104,7 +103,6 @@ def get_geogig_repo_name(repo):
 
 
 def get_all_geogig_repos():
-
     response = requests.get(get_geogig_base_url(),
                             verify=False)
 
@@ -121,8 +119,8 @@ def get_all_geogig_repos():
     for name in root.findall(".//name"):  # Returns []
         names += [name.text]
 
-    repos={}
-    for i in range(0,len(ids)):
+    repos = {}
+    for i in range(0, len(ids)):
         repos[ids[i]] = names[i]
 
     return repos
@@ -177,7 +175,6 @@ def get_ogc_server(alias=None):
 
 
 def send_wfs(xml=None, url=None):
-
     client = requests.session()
     URL = 'https://{}/account/login'.format('geoshape.dev')
     client.get(URL, verify=False)
@@ -198,17 +195,20 @@ def send_wfs(xml=None, url=None):
     print(str(response.request.headers))
     print(str(client.cookies))
     body = handle_double_zip(response)
-    with open('/var/lib/geonode/fulcrum_data/output.html','wb') as out_html:
+    with open('/var/lib/geonode/fulcrum_data/output.html', 'wb') as out_html:
         out_html.write(body.encode('utf-8'))
 
 
 def geojson_to_wfs(geojson=None):
-    root = ET.fromstring(get_xml_template())
+    root = ET.fromstring(get_wfs_template())
     return ET.tostring(root)
 
 
-def get_xml_template():
-
+def get_wfs_template():
+    import xml.etree.ElementTree as ET
+    ET.register_namespace('wfs', "http://www.opengis.net/wfs")
+    ET.register_namespace('gml', "http://www.opengis.org/gml")
+    ET.register_namespace('feature', "http://www.geonode.org/")
     wfs_template = '<?xml version="1.0" encoding="UTF-8"?>\
     <wfs:Transaction xmlns:wfs="http://www.opengis.net/wfs" ' \
                    'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' \
@@ -216,69 +216,48 @@ def get_xml_template():
                    'handle="Added 1 feature." ' \
                    'xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.0.0/wfs.xsd">\
         <wfs:Insert handle="Added 1 feature to '' via MapLoom.">\
-            <feature:fulcrum_starbucks xmlns:feature="http://www.geonode.org/">\
-                <feature:wkb_geometry>\
-                    <gml:Point xmlns:gml="http://www.opengis.net/gml" srsName="urn:ogc:def:crs:EPSG::4326">\
-                        <gml:coordinates decimal="." cs="," ts=" ">0,0</gml:coordinates>\
-                    </gml:Point>\
-                </feature:wkb_geometry>\
-                <feature:updated_at>1</feature:updated_at>\
-                <feature:updated_at_time>1</feature:updated_at_time>\
-                <feature:updated_by_id>1</feature:updated_by_id>\
-                <feature:form_id>1</feature:form_id>\
-                <feature:city>1</feature:city>\
-                <feature:created_by>1</feature:created_by>\
-                <feature:client_created_at>1</feature:client_created_at>\
-                <feature:version>1</feature:version>\
-                <feature:latitude>1</feature:latitude>\
-                <feature:phone_number>1</feature:phone_number>\
-                <feature:store_number>1</feature:store_number>\
-                <feature:updated_by>1</feature:updated_by>\
-                <feature:client_updated_at>1</feature:client_updated_at>\
-                <feature:created_by_id>1</feature:created_by_id>\
-                <feature:name>new</feature:name>\
-                <feature:fulcrum_id>40</feature:fulcrum_id>\
-                <feature:country>1</feature:country>\
-                <feature:created_at>1</feature:created_at>\
-                <feature:longitude>1</feature:longitude>\
-                <feature:address_1>1</feature:address_1>\
-                <feature:address_2>1</feature:address_2>\
-                <feature:address_3>1</feature:address_3>\
-                <feature:postal_code>1</feature:postal_code>\
-            </feature:fulcrum_starbucks>\
         </wfs:Insert>\
     </wfs:Transaction>'
-    return wfs_template
+    wfs = ET.fromstring(wfs_template)
+    return wfs
 
 
-# def import_pg(geogig_store_name, table):
-#     """
-#     Args:
-#         store_name: name of geogig repo
-#     Returns:
-#         None
-#     """
-#
-#     ogc_server = get_ogc_server()
-#     url = "{}/rest".format(ogc_server.get('LOCATION').rstrip('/'))
-#     workspace_name = "geonode"
-#     workspace_uri = "http://www.geonode.org/"
-#     cat = Catalog(url)
-#     # Check if local workspace exists and if not create it
-#     workspace = cat.get_workspace(workspace_name)
-#     if workspace is None:
-#         cat.create_workspace(workspace_name, workspace_uri)
-#         print "Workspace " + workspace_name + " created."
-#
-#     source_datastore = cat.get_store(ogc_server.get('name'))
-#
-#     geogig_datastore = cat.get_store(geogig_store_name)
-#     cat.add_data_to_store()
-#
-#     if not datastore:
-#         datastore = cat.create_datastore(store_name, workspace_name)
-#         datastore.connection_parameters.update(geogig_repository=os.path.join(ogc_server.get('GEOGIG_DATASTORE_DIR'),
-#                                                                               store_name),
-#                                                branch='master')
-#         cat.save(datastore)
-#     cat.add_data_to_store
+def get_wfs_transaction(feature_dict, layer):
+    from lxml import etree as ET
+    ns_map = {"xsi": "http://www.w3.org/2001/XMLSchema-instance",
+             "wfs":  "http://www.opengis.net/wfs",
+              "gml": "http://www.opengis.org/gml",
+              "feature": "http://www.geonode.org/"}
+
+    transactionName = ET.QName("http://www.opengis.net/wfs", 'transaction')
+    transaction = ET.Element(transactionName, nsmap=ns_map)
+    # sheet = ET.ElementTree(root)
+
+    insert = ET.SubElement(transaction, ET.QName(ns_map.get('wfs'), "Insert"), attrib={'handle':'Added {} feature(s) via django-fulcrum'.format(1)})
+    feature = ET.SubElement(insert, ET.QName(ns_map.get('feature'), layer))
+    geometry = ET.SubElement(feature, ET.QName(ns_map.get('feature'), 'wkb_geometry'))
+    point = ET.SubElement(geometry, ET.QName(ns_map.get('gml'), 'Point'), attrib={'srsName':'urn:ogc:def:crs:EPSG::4326'})
+    coordinates = ET.SubElement(point, ET.QName(ns_map.get('gml'), 'coordinates'), attrib={'decimal':'.',
+                                                                                           'cs':',',
+                                                                                           'ts':' '})
+    coords = feature_dict.get('geometry').get('coordinates')
+    coordinates.text = "{},{}".format(coords[1], coords[0])
+    for prop in feature_dict.get('properties'):
+        feature_element = ET.SubElement(feature, ET.QName(ns_map.get('feature'), prop))
+        feature_element.text = str(feature_dict.get('properties').get(prop))
+    return ET.tostring(transaction, xml_declaration=True, encoding="UTF-8")
+
+
+def post_wfs_transaction(wfst):
+    if not getattr(settings, "SITEURL", None):
+        return None
+    # url_login = "{}/account/login".format(getattr(settings, "SITEURL", None).rstrip('/'))
+    # url_proxy = "{}/proxy".format(getattr(settings, "SITEURL", None).rstrip('/'))
+    url = "{}/geoserver/wfs/WfsDispatcher".format(getattr(settings, "SITEURL", None).rstrip('/'))
+    # s = requests.Session()
+    # s.post(url_login, params={'username': 'admin', 'password': 'geoserver'})
+    headers = {'Content-Type': 'application/xml'}
+    ogc_server = get_ogc_server()
+    auth=(ogc_server.get('USER'),
+          ogc_server.get('PASSWORD'))
+    print(requests.post(url, auth=auth, data=wfst, headers=headers).text)
