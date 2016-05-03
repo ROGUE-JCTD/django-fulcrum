@@ -109,6 +109,7 @@ class DjangoFulcrum:
         media_map = self.get_media_map(form, element_map)
         layer = Layer.objects.get(layer_uid=form.get('id'))
         changeset_dict = get_changeset_models()
+        upload_to_geogig = getattr(settings, "UPLOAD_TO_GEOGIG", False)
         if layer:
             records = self.get_latest_records(layer)
         else:
@@ -187,7 +188,7 @@ class DjangoFulcrum:
             except ConnectionDoesNotExist:
                 database_alias = None
             if upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias):
-                if not settings.UPLOAD_TO_GEOGIG:
+                if not upload_to_geogig:
                     publish_layer(layer.layer_name, database_alias=database_alias)
                     update_geoshape_layers()
                     send_task('django_fulcrum.tasks.task_update_tiles', (uploads, layer.layer_name))
@@ -201,7 +202,7 @@ class DjangoFulcrum:
             layer.layer_date = int(latest_time)
             layer.save()
 
-        if settings.UPLOAD_TO_GEOGIG:
+        if upload_to_geogig:
             send_task('django_fulcrum.tasks.task_import_to_geogig', (form.get('id'), layer.layer_name))
         print("RESULTS\n---------------")
         print("Total Records Pulled: {}".format(pulled_record_count))
@@ -684,6 +685,7 @@ def upload_geojson(file_path=None, geojson=None):
 
     uploads = []
     count = 0
+    upload_to_geogig = getattr(settings, "UPLOAD_TO_GEOGIG", False)
     file_basename = os.path.splitext(os.path.basename(file_path))[0]
     layer, created = write_layer(name=file_basename)
     layer_name = layer.layer_name
@@ -752,10 +754,10 @@ def upload_geojson(file_path=None, geojson=None):
     table_name = layer.layer_name
 
     if upload_to_db(uploads, table_name, media_keys, database_alias=database_alias):
-        if not settings.UPLOAD_TO_GEOGIG:
+        if not upload_to_geogig:
             publish_layer(table_name, database_alias=database_alias)
             update_geoshape_layers()
-    if settings.UPLOAD_TO_GEOGIG:
+    if upload_to_geogig:
             send_task('django_fulcrum.tasks.task_import_to_geogig', (file_basename, layer_name))
     return True
 

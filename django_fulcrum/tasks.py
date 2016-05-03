@@ -144,6 +144,11 @@ def task_import_to_geogig(form_id, layer_name):
         print "Here is where I would upload to geogig, if I had one :("
         # upload to geogig
 
+        # Will this stuff need to run here?
+        
+        # update_geoshape_layers()
+        # send_task('django_fulcrum.tasks.task_update_tiles', (uploads, layer.layer_name))
+
 
 def is_feature_task_locked():
     """Returns True if one of the tasks which add features is currently running."""
