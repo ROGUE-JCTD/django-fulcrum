@@ -722,7 +722,10 @@
 						};
 						
 					},
-	                error: console.log("Fail"),
+	                error: function(result) {
+	                	document.getElementById('waiting').style.visibility = 'hidden';
+	                	alert("Your file is too big to be processed in a timely manner. It will appear in your layer control when processing is finished");
+	                },
 	                // Form data //
 	                data: formData,
 	                // Options to tell jQuery not to process data or worry about content-type. //
