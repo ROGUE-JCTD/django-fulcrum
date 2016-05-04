@@ -771,12 +771,21 @@ class DjangoFulcrumDBTests(TransactionTestCase):
         feature = Feature(feature_uid='sdfs-sert-fbff',
                           feature_version=1,
                           layer=required_layer,
-                          feature_data="Feature data",
+                          feature_data=json.dumps({"type": "Feature",
+                                 "geometry": {
+                                     "type": "Point",
+                                     "coordinates": [25.0, 25.0]
+                                 },
+                                 "properties": {
+                                     "prop0": "value0",
+                                     "prop1": "value1"
+                                 }
+                                }),
                           feature_added_time='2016-04-29T11:23:52Z',
                           feature_changeset=changeset)
         feature.save()
-        features_query = get_features_by_changeset(changeset)
-        self.assertEqual(feature, features_query[0])
+        features_query = get_features_by_changeset(changeset, 'layer')
+        self.assertEqual(json.loads(feature.feature_data), features_query[0])
 
     def test_get_geojson_from_queryset(self):
         expected_geojson = {"type": "FeatureCollection",
@@ -870,7 +879,7 @@ class DjangoFulcrumDBTests(TransactionTestCase):
                           feature_changeset=changeset2)
         feature2.save()
 
-        for grouped_features in changeset_chunks('yuio-vbnm-zxcv'):
+        for grouped_features in changeset_chunks('yuio-vbnm-zxcv', 'layer'):
             self.assertEqual(len(grouped_features), 1)
 
     def test_s3_credentials_admin(self):

@@ -509,8 +509,9 @@ def changeset_chunks(form_id, layer_name):
                 continue
             print("Processing changeset {} of {}...".format(changeset.changeset_uid, len(features)))
             yield features
-    #features_without_changeset = Feature.objects.filter(feature_changeset=None, layer=layer)
-    yield get_features_by_changeset(None, layer_name)
+    features_without_changeset = Feature.objects.filter(feature_changeset=None, layer=Layer.objects.get(layer_name=layer_name))
+    if features_without_changeset.exists():
+        yield get_features_by_changeset(None, layer_name)
 
 
 def chunks(a_list, chunk_size):
