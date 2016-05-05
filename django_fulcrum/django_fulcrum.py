@@ -144,7 +144,8 @@ class DjangoFulcrum:
                                         feature['properties']['{}'.format(media_key)] += [
                                             self.get_asset(media_id, media_map.get(media_key))]
                                     else:
-                                        feature['properties']['{}'.format(media_key)] += []
+                                        feature.get('properties').get(media_key).remove(media_id)
+                                        #feature['properties']['{}'.format(media_key)] += []
                                 except KeyError:
                                     if self.get_asset(media_id, media_map.get(media_key)) is not None:
                                         feature['properties']['{}_url'.format(media_key)] = [
@@ -152,7 +153,8 @@ class DjangoFulcrum:
                                         feature['properties']['{}'.format(media_key)] = [
                                             self.get_asset(media_id, media_map.get(media_key))]
                                     else:
-                                        feature['properties']['{}'.format(media_key)] += []
+                                        feature.get('properties').get(media_key).remove(media_id)
+                                        #feature['properties']['{}'.format(media_key)] += []
                     write_feature(feature.get('properties').get('fulcrum_id'),
                                   feature.get('properties').get('version'),
                                   layer,
@@ -311,8 +313,10 @@ class DjangoFulcrum:
         """
         properties = {}
         for em_key, em_val in element_map.iteritems():
-            if not form_values.get(em_key):
+            if not form_values.get(em_key) and em_val not in media_map:
                 properties[em_val] = ""
+            elif not form_values.get(em_key):
+                properties[em_val] = []
             else:
                 if not element_map.get(em_key) in media_map:
                     properties[element_map.get(em_key)] = form_values.get(em_key)
