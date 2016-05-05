@@ -137,24 +137,19 @@ class DjangoFulcrum:
                         if feature.get('properties').get(media_key):
                             for media_id in feature.get('properties').get(media_key):
                                 print("Getting asset :{}".format(media_id))
-                                try:
-                                    if self.get_asset(media_id, media_map.get(media_key)) is not None:
-                                        feature['properties']['{}_url'.format(media_key)] += [
-                                            self.get_asset(media_id, media_map.get(media_key))]
-                                        feature['properties']['{}'.format(media_key)] += [
-                                            self.get_asset(media_id, media_map.get(media_key))]
+                                asset = self.get_asset(media_id, media_map.get(media_key))
+                                if asset is not None:
+                                    if '{}_url'.format(media_key) in feature.get('properties'):
+                                        feature['properties']['{}_url'.format(media_key)] += [asset]
+                                        feature['properties']['{}'.format(media_key)] += [asset]
                                     else:
-                                        feature.get('properties').get(media_key).remove(media_id)
-                                        #feature['properties']['{}'.format(media_key)] += []
-                                except KeyError:
-                                    if self.get_asset(media_id, media_map.get(media_key)) is not None:
-                                        feature['properties']['{}_url'.format(media_key)] = [
-                                            self.get_asset(media_id, media_map.get(media_key))]
-                                        feature['properties']['{}'.format(media_key)] = [
-                                            self.get_asset(media_id, media_map.get(media_key))]
-                                    else:
-                                        feature.get('properties').get(media_key).remove(media_id)
-                                        #feature['properties']['{}'.format(media_key)] += []
+                                        feature['properties']['{}_url'.format(media_key)] = [asset]
+                                        feature['properties']['{}'.format(media_key)] = [asset]
+                                else:
+                                    feature.get('properties').get(media_key).remove(media_id)
+
+
+
                     write_feature(feature.get('properties').get('fulcrum_id'),
                                   feature.get('properties').get('version'),
                                   layer,
@@ -327,9 +322,15 @@ class DjangoFulcrum:
                     for asset_prop in form_values.get(em_key):
                         for asset_prop_key, asset_prop_val in asset_prop.iteritems():
                             if 'id' in asset_prop_key:
-                                properties[element_map.get(em_key)] = [asset_prop_val]
+                                if not properties.get(element_map.get(em_key)):
+                                    properties[element_map.get(em_key)] = [asset_prop_val]
+                                else:
+                                    properties[element_map.get(em_key)] += [asset_prop_val]
                             if 'caption' in asset_prop_key:
-                                properties['{}_caption'.format(element_map.get(em_key))] = [asset_prop_val]
+                                if not properties.get('{}_caption'.format(element_map.get(em_key))):
+                                    properties['{}_caption'.format(element_map.get(em_key))] = [asset_prop_val]
+                                else:
+                                    properties['{}_caption'.format(element_map.get(em_key))] += [asset_prop_val]
         return properties
 
     def get_asset(self, asset_id, asset_type):
