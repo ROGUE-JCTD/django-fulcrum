@@ -584,10 +584,9 @@ def process_fulcrum_data(f):
         unzip_file(file_path)
         for folder, subs, files in os.walk(os.path.join(get_data_dir(), os.path.splitext(file_path)[0])):
             for filename in files:
-                if '.geojson' in filename:
-                    if '_changesets' in filename:
-                        changeset_filepath = os.path.join(folder, filename)
-                        write_changesets_from_file(changeset_filepath, filename[:-19])
+                if '.geojson' in filename and '_changesets' in filename:
+                    changeset_filepath = os.path.join(folder, filename)
+                    write_changesets_from_file(changeset_filepath, filename[:-19])
         for folder, subs, files in os.walk(os.path.join(get_data_dir(), os.path.splitext(file_path)[0])):
             for filename in files:
                 if '.geojson' in filename and '_changesets' not in filename:
