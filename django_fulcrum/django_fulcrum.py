@@ -16,6 +16,7 @@
 # Copyright (c) 1999, Frank Warmerdam
 
 from fulcrum import Fulcrum
+from fulcrum.exceptions import NotFoundException
 from dateutil import parser
 from django.core.files.temp import NamedTemporaryFile
 import requests
@@ -172,9 +173,15 @@ class DjangoFulcrum:
                                             self.get_asset(media_id, media_map.get(media_key))]
                                     else:
                                         feature['properties']['{}'.format(media_key)] += []
-                    if feature.get('properties').get('changeset_id') and feature.get('properties').get('changeset_id') in changeset_dict:
-                        changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
-                    else:
+                    # IF BATCH RECORDS CONTAIN CHANGESET IDS 
+                    # if feature.get('properties').get('changeset_id') and feature.get('properties').get('changeset_id') in changeset_dict:
+                    #     changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
+                    # else:
+                    #     changeset_id = None
+                    try:
+                        record = self.conn.records.find(feature.get('properties').get('fulcrum_id'))
+                        changeset_id = changeset_dict.get(record.get('record').get('changeset_id'))
+                    except NotFoundException:
                         changeset_id = None
                     write_feature(feature.get('properties').get('fulcrum_id'),
                                   feature.get('properties').get('version'),
