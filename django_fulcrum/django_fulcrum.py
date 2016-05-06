@@ -1019,7 +1019,6 @@ def prepare_features_for_geoshape(feature_data, media_keys=None):
             if ('{}_caption'.format(media_key)) in feature.get('properties'):
                 feature['properties']['caption_{}'.format(media_key)] = \
                     ", ".join(feature['properties'].get('{}_caption'.format(media_key)))
-                print feature.get('properties').get('caption_{}'.format(media_key))
                 try:
                     del feature['properties']['{}_caption'.format(media_key)]
                     if feature.get('properties').get('prop_{}_caption'.format(media_key)):
