@@ -328,9 +328,15 @@ class DjangoFulcrum:
                                     properties[element_map.get(em_key)] += [asset_prop_val]
                             if 'caption' in asset_prop_key:
                                 if not properties.get('{}_caption'.format(element_map.get(em_key))):
-                                    properties['{}_caption'.format(element_map.get(em_key))] = [asset_prop_val]
+                                    if asset_prop_val:
+                                        properties['{}_caption'.format(element_map.get(em_key))] = [asset_prop_val]
+                                    else:
+                                        properties['{}_caption'.format(element_map.get(em_key))] = []
                                 else:
-                                    properties['{}_caption'.format(element_map.get(em_key))] += [asset_prop_val]
+                                    if asset_prop_val:
+                                        properties['{}_caption'.format(element_map.get(em_key))] += [asset_prop_val]
+                                    else:
+                                        properties['{}_caption'.format(element_map.get(em_key))] += []
         return properties
 
     def get_asset(self, asset_id, asset_type):
@@ -1012,9 +1018,12 @@ def prepare_features_for_geoshape(feature_data, media_keys=None):
         for media_key, media_val in media_keys.iteritems():
             if ('{}_caption'.format(media_key)) in feature.get('properties'):
                 feature['properties']['caption_{}'.format(media_key)] = \
-                    feature['properties'].get('{}_caption'.format(media_key))
+                    ", ".join(feature['properties'].get('{}_caption'.format(media_key)))
+                print feature.get('properties').get('caption_{}'.format(media_key))
                 try:
                     del feature['properties']['{}_caption'.format(media_key)]
+                    if feature.get('properties').get('prop_{}_caption'.format(media_key)):
+                        del feature['properties']['prop_{}_caption'.format(media_key)]
                 except KeyError:
                     pass
             try:
