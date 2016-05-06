@@ -395,7 +395,7 @@ class DjangoFulcrumTests(TestCase):
                     'created_by_id': 'bbf56001-a5b0-40a6-9ae6-607771983c62',
                     'sounds': ['5dcd8385-d46c-4856-a689-6ce3ec8da8ed.m4a'],
                     'id': 'b5da0b90-d325-4299-b6cd-0d0baacc0c62',
-                    'vids_caption': [None],
+                    'vids_caption': [],
                     'name': 'Example',
                     "altitude": None,
                     "speed": None,
