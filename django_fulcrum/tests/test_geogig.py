@@ -27,7 +27,7 @@ class DjangoFulcrumGeogigTests(TestCase):
             set_geoserver_permissions(repo_dir)
         repos = get_all_geogig_repos()
         import_from_pg(new_repo, "fulcrum_test3")
-        create_geogig_datastore(new_repo)
+        create_geogig_datastore(new_repo, "fulcrum_test3")
         for repo in repos:
             print repo
 

@@ -9,7 +9,7 @@ import subprocess
 import shutil
 import sys
 
-def create_geogig_datastore(store_name):
+def create_geogig_datastore(store_name, layer_name):
     """
     Args:
         store_name: name of geogig repo
@@ -43,6 +43,36 @@ def create_geogig_datastore(store_name):
                                                branch='master')
         cat.save(datastore)
 
+    # Check if remote layer already exists on local system
+    layers = cat.get_layers()
+    srs = "EPSG:4326"
+    layer = None
+    for lyr in layers:
+        if lyr.resource.name.lower() == layer_name.lower():
+            layer = lyr
+
+    if not layer:
+        # Publish remote layer
+        layer = cat.publish_featuretype(layer_name.lower(), datastore, srs, srs=srs)
+        return layer, True
+    else:
+        return layer, False
+
+
+def is_geogig_layer_published(store_name, layer_name):
+    ogc_server = get_ogc_server()
+    url = "{}/rest".format(ogc_server.get('LOCATION').rstrip('/'))
+    cat = Catalog(url)
+    # Check if remote layer already exists on local system
+    layers = cat.get_layers()
+    layer = None
+    for lyr in layers:
+        if lyr.resource.name.lower() == layer_name.lower():
+            layer = lyr
+    if not layer:
+        return False
+    else:
+        return True
 
 def create_geogig_repo(repo_name,
                        user_name=getattr(settings, 'SITENAME', None),
