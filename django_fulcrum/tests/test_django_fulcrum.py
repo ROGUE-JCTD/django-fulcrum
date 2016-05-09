@@ -743,6 +743,146 @@ class DjangoFulcrumDBTests(TransactionTestCase):
         cur.close()
         connection.close()
 
+    def test_get_changeset_models(self):
+        changeset = Changesets(changeset_uid='asdf-ghjk-qwerty',
+                               changeset_form_id='yuio-vbnm-zxcv',
+                               changeset_created_at='2016-04-29T11:23:52Z',
+                               changeset_updated_at='2016-04-29T11:23:52Z',
+                               changeset_number_of_changes=1,
+                               changeset_comment="This is a comment")
+        changeset.save()
+        changeset_query = Changesets.objects.all()[0]
+        self.assertEqual(changeset_query, get_changeset_models().get('asdf-ghjk-qwerty'))
+
+    def test_get_feature_by_changeset(self):
+        changeset = Changesets(changeset_uid='asdf-ghjk-qwerty',
+                               changeset_form_id='yuio-vbnm-zxcv',
+                               changeset_created_at='2016-04-29T11:23:52Z',
+                               changeset_updated_at='2016-04-29T11:23:52Z',
+                               changeset_number_of_changes=1,
+                               changeset_comment="This is a comment")
+        changeset.save()
+
+        required_layer = Layer(layer_name="layer",
+                               layer_uid="layer_uid",
+                               layer_date=0,
+                               layer_media_keys="{}")
+        required_layer.save()
+
+        feature = Feature(feature_uid='sdfs-sert-fbff',
+                          feature_version=1,
+                          layer=required_layer,
+                          feature_data=json.dumps({"type": "Feature",
+                                 "geometry": {
+                                     "type": "Point",
+                                     "coordinates": [25.0, 25.0]
+                                 },
+                                 "properties": {
+                                     "prop0": "value0",
+                                     "prop1": "value1"
+                                 }
+                                }),
+                          feature_added_time='2016-04-29T11:23:52Z',
+                          feature_changeset=changeset)
+        feature.save()
+        features_query = get_features_by_changeset(changeset, 'layer')
+        self.assertEqual(json.loads(feature.feature_data), features_query[0])
+
+    def test_get_geojson_from_queryset(self):
+        expected_geojson = {"type": "FeatureCollection",
+                            "features": [
+                                {"type": "Feature",
+                                 "geometry": {
+                                     "type": "Point",
+                                     "coordinates": [25.0, 25.0]
+                                 },
+                                 "properties": {
+                                     "prop0": "value0",
+                                     "prop1": "value1"
+                                 }
+                                }
+                            ]}
+        required_layer = Layer(layer_name="layer",
+                               layer_uid="layer_uid",
+                               layer_date=0,
+                               layer_media_keys="{}")
+        required_layer.save()
+
+        feature = Feature(feature_uid='sdfs-sasdf-adfasa',
+                          feature_version=2,
+                          layer=required_layer,
+                          feature_data=json.dumps(expected_geojson.get('features')[0]),
+                          feature_added_time='2016-04-29T11:23:52Z',
+                          feature_changeset=None)
+        feature.save()
+        feature_queryset_data = Feature.objects.all()
+        feature_data = get_geojson_from_queryset(feature_queryset_data)
+        self.assertEqual(expected_geojson, feature_data)
+
+    def test_write_changesets_to_db(self):
+        changeset_list = [{
+                    "fulcrum_id" : "594e8996-cda3-4902-b60b-46d7e5fd4525",
+                    "created_at" : "2016-04-27 15:38:54 UTC",
+                    "updated_at" : "2016-04-27 15:38:55 UTC",
+                    "number_of_changes" : 3,
+                    "comment" : "my comment",
+                    }]
+        form_id='form_id'
+        geojson = True
+        write_changesets_to_db(changesets_list=changeset_list, form_id=form_id, geojson=geojson)
+        self.assertIsNotNone(Changesets.objects.all().filter(changeset_uid='594e8996-cda3-4902-b60b-46d7e5fd4525'))
+
+        changeset_list2 = [{
+                    "id" : "594e8996-cda3-4902-b60b-46d7e5fd9999",
+                    "created_at" : "2016-04-27 15:38:54 UTC",
+                    "updated_at" : "2016-04-27 15:38:55 UTC",
+                    "number_of_changes" : 3,
+                    "metadata": {"comment" : "my comment"},
+                    }]
+        form_id2='form_id'
+        geojson2 = False
+        write_changesets_to_db(changesets_list=changeset_list2, form_id=form_id2, geojson=geojson2)
+        self.assertIsNotNone(Changesets.objects.all().filter(changeset_uid='594e8996-cda3-4902-b60b-46d7e5fd9999'))
+
+    def test_changeset_chunks(self):
+        required_layer = Layer(layer_name="layer",
+                               layer_uid="layer_uid",
+                               layer_date=0,
+                               layer_media_keys="{}")
+        required_layer.save()
+        changeset = Changesets(changeset_uid='asdf-ghjk-poiuy',
+                               changeset_form_id='yuio-vbnm-zxcv',
+                               changeset_created_at='2016-04-29T11:23:52Z',
+                               changeset_updated_at='2016-04-29T11:23:52Z',
+                               changeset_number_of_changes=1,
+                               changeset_comment="This is a comment")
+        changeset.save()
+        changeset2 = Changesets(changeset_uid='asdf-ghjk-qwerty',
+                               changeset_form_id='yuio-vbnm-zxcv',
+                               changeset_created_at='2016-04-29T11:23:52Z',
+                               changeset_updated_at='2016-04-29T11:23:52Z',
+                               changeset_number_of_changes=1,
+                               changeset_comment="This is a comment")
+        changeset2.save()
+
+        feature = Feature(feature_uid='sdfs-sasdf-adfasa',
+                          feature_version=2,
+                          layer=required_layer,
+                          feature_data=json.dumps({'properties': {'data':'my-data'}}),
+                          feature_added_time='2016-04-29T11:23:52Z',
+                          feature_changeset=changeset)
+        feature.save()
+        feature2 = Feature(feature_uid='sdfs-sasdf-adlkj',
+                          feature_version=2,
+                          layer=required_layer,
+                          feature_data=json.dumps({'properties': {'data':'my-data'}}),
+                          feature_added_time='2016-04-29T11:23:52Z',
+                          feature_changeset=changeset2)
+        feature2.save()
+
+        for grouped_features in changeset_chunks('yuio-vbnm-zxcv', 'layer'):
+            self.assertEqual(len(grouped_features), 1)
+
     def test_s3_credentials_admin(self):
         """Ensure the expected structure of the s3 credentials is maintained."""
         s3_cred = S3Credential.objects.create(s3_key='key',

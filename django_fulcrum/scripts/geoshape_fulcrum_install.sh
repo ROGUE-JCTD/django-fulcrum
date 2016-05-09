@@ -71,6 +71,10 @@ echo "FULCRUM_UPLOAD = '/var/lib/geonode/fulcrum_data'" >> /var/lib/geonode/rogu
 grep -q "^DATABASES['fulcrum'] =" /var/lib/geonode/rogue_geonode/geoshape/local_settings.py ||
 echo "DATABASES['fulcrum'] = DATABASES['geoshape_imports']" >> /var/lib/geonode/rogue_geonode/geoshape/local_settings.py
 
+grep -q "^UPLOAD_TO_GEOGIG =" /var/lib/geonode/rogue_geonode/geoshape/local_settings.py ||
+echo "UPLOAD_TO_GEOGIG = False" >> /var/lib/geonode/rogue_geonode/geoshape/local_settings.py
+
+
 grep -q "^S3_CREDENTIALS =" /var/lib/geonode/rogue_geonode/geoshape/local_settings.py ||
 printf "# S3_CREDENTIALS = [{'s3_bucket': ['xxxxx'],\n\
         #           's3_key': 'xxxxx',\n\
