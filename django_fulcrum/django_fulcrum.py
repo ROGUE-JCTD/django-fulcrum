@@ -194,11 +194,11 @@ class DjangoFulcrum:
                 connections[database_alias]
             except ConnectionDoesNotExist:
                 database_alias = None
-            if upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias):
-                if not upload_to_geogig:
+            if not upload_to_geogig:
+                if upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias):
                     publish_layer(layer.layer_name, database_alias=database_alias)
                     update_geoshape_layers()
-                    send_task('django_fulcrum.tasks.task_update_tiles', (uploads, layer.layer_name))
+                    send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name))
             with transaction.atomic():
                 layer.layer_date = int(latest_time)
                 layer.save()
@@ -210,7 +210,7 @@ class DjangoFulcrum:
             layer.save()
 
         if upload_to_geogig:
-            send_task('django_fulcrum.tasks.task_import_to_geogig', (form.get('id'), layer.layer_name))
+            send_task('django_fulcrum.tasks.task_import_to_geogig', (form.get('id'), layer.layer_name, media_map))
         print("RESULTS\n---------------")
         print("Total Records Pulled: {}".format(pulled_record_count))
         print("Total Records Passed Filter: {}".format(total_passed_features))
@@ -765,7 +765,7 @@ def upload_geojson(file_path=None, geojson=None):
             publish_layer(table_name, database_alias=database_alias)
             update_geoshape_layers()
     if upload_to_geogig:
-            send_task('django_fulcrum.tasks.task_import_to_geogig', (file_basename, layer_name))
+            send_task('django_fulcrum.tasks.task_import_to_geogig', (file_basename, layer_name, media_keys))
     return True
 
 

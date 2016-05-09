@@ -9,6 +9,15 @@ import subprocess
 import shutil
 import sys
 
+
+def import_to_geogig(repo_name, layer_name):
+    repo_dir = create_geogig_repo(repo_name)
+    if repo_dir:
+        set_geoserver_permissions(repo_dir)
+    import_from_pg(repo_name, layer_name)
+    create_geogig_datastore(repo_name, layer_name)
+
+
 def create_geogig_datastore(store_name, layer_name):
     """
     Args:
@@ -59,7 +68,7 @@ def create_geogig_datastore(store_name, layer_name):
         return layer, False
 
 
-def is_geogig_layer_published(store_name, layer_name):
+def is_geogig_layer_published(layer_name):
     ogc_server = get_ogc_server()
     url = "{}/rest".format(ogc_server.get('LOCATION').rstrip('/'))
     cat = Catalog(url)

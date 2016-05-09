@@ -14,6 +14,7 @@
 from __future__ import absolute_import
 
 from django.test import TestCase
+from ..django_fulcrum import update_geoshape_layers
 from ..geogig import get_all_geogig_repos, create_geogig_datastore, create_geogig_repo, get_geogig_repo_name, \
     set_geoserver_permissions, import_from_pg, post_wfs_transaction
 
@@ -28,6 +29,7 @@ class DjangoFulcrumGeogigTests(TestCase):
         repos = get_all_geogig_repos()
         import_from_pg(new_repo, "fulcrum_test3")
         create_geogig_datastore(new_repo, "fulcrum_test3")
+        update_geoshape_layers()
         for repo in repos:
             print repo
 
