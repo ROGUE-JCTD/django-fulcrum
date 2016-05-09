@@ -229,7 +229,7 @@ def get_wfs_transaction(feature_dict, layer):
               "gml": "http://www.opengis.org/gml",
               "feature": "http://www.geonode.org/"}
 
-    transactionName = ET.QName("http://www.opengis.net/wfs", 'transaction')
+    transactionName = ET.QName("http://www.opengis.net/wfs", 'Transaction')
     transaction = ET.Element(transactionName, nsmap=ns_map)
     # sheet = ET.ElementTree(root)
 
@@ -261,3 +261,19 @@ def post_wfs_transaction(wfst):
     auth=(ogc_server.get('USER'),
           ogc_server.get('PASSWORD'))
     print(requests.post(url, auth=auth, data=wfst, headers=headers).text)
+
+
+def import_from_pg(repo_name, table_name):
+    from django.db import connections
+    db_conn = connections['fulcrum']
+    repo_dir = os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), repo_name)
+    prev_dir = os.getcwd()
+    os.chdir(repo_dir)
+    subprocess.call(['geogig', 'pg', 'import',
+                     '--database', db_conn.settings_dict.get('NAME'),
+                     '--host', db_conn.settings_dict.get('HOST'),
+                     '--port', db_conn.settings_dict.get('PORT'),
+                     '--user', db_conn.settings_dict.get('USER'),
+                     '--password', db_conn.settings_dict.get('PASSWORD'),
+                     '--table', table_name])
+    os.chdir(prev_dir)

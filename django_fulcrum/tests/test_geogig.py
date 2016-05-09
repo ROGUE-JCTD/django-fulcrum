@@ -15,36 +15,37 @@ from __future__ import absolute_import
 
 from django.test import TestCase
 from ..geogig import get_all_geogig_repos, create_geogig_datastore, create_geogig_repo, get_geogig_repo_name, \
-    set_geoserver_permissions, get_wfs_transaction, post_wfs_transaction
+    set_geoserver_permissions, import_from_pg, post_wfs_transaction
 
 
 class DjangoFulcrumGeogigTests(TestCase):
 
-    # def test_create_geogig_repo(self):
-    #     new_repo = 'fulcrum_geogig'
-    #     repo_dir = create_geogig_repo(new_repo)
-    #     if repo_dir:
-    #         set_geoserver_permissions(repo_dir)
-    #     repos = get_all_geogig_repos()
-    #     create_geogig_datastore(new_repo)
-    #     for repo in repos:
-    #         print repo
+    def test_create_geogig_repo(self):
+        new_repo = 'fulcrum_geogig'
+        repo_dir = create_geogig_repo(new_repo)
+        if repo_dir:
+            set_geoserver_permissions(repo_dir)
+        repos = get_all_geogig_repos()
+        import_from_pg(new_repo, "fulcrum_test3")
+        create_geogig_datastore(new_repo)
+        for repo in repos:
+            print repo
 
-    def test_get_geometry_point_element(self):
-        test_feature = {
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [125.6, 10.1]
-            },
-            "properties": {
-                "name": "Dinagat Islands",
-                "version": 1,
-                "fulcrum_id": "123",
-                "meta": "OK"
-            }
-        }
-
-        wfst = get_wfs_transaction(test_feature, 'fulcrum_test2')
-        print(wfst)
-        print(post_wfs_transaction(wfst))
+    # def test_get_geometry_point_element(self):
+    #     test_feature = {
+    #         "type": "Feature",
+    #         "geometry": {
+    #             "type": "Point",
+    #             "coordinates": [125.6, 10.1]
+    #         },
+    #         "properties": {
+    #             "name": "Dinagat Islands",
+    #             "version": 1,
+    #             "fulcrum_id": "123",
+    #             "meta": "OK"
+    #         }
+    #     }
+    #
+    #     wfst = get_wfs_transaction(test_feature, 'fulcrum_test2')
+    #     print(wfst)
+    #     print(post_wfs_transaction(wfst))
