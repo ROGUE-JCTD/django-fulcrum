@@ -269,11 +269,13 @@ def import_from_pg(repo_name, table_name):
     repo_dir = os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), repo_name)
     prev_dir = os.getcwd()
     os.chdir(repo_dir)
-    subprocess.call(['/var/lib/geogig//bin/geogig', 'pg', 'import',
+    subprocess.call(['/var/lib/geogig/bin/geogig', 'pg', 'import',
                      '--database', 'geoshape_data', #db_conn.settings_dict.get('NAME'),
                      '--host', db_conn.settings_dict.get('HOST'),
                      '--port', db_conn.settings_dict.get('PORT'),
                      '--user', db_conn.settings_dict.get('USER'),
                      '--password', db_conn.settings_dict.get('PASSWORD'),
                      '--table', table_name])
+    subprocess.call(['/var/lib/geogig/bin/geogig', 'add'])
+    subprocess.call(['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis.'".format(table_name)])
     os.chdir(prev_dir)
