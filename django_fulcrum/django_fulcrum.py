@@ -198,7 +198,7 @@ class DjangoFulcrum:
                 if upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias):
                     publish_layer(layer.layer_name, database_alias=database_alias)
                     update_geoshape_layers()
-                    send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name))
+                    send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
             with transaction.atomic():
                 layer.layer_date = int(latest_time)
                 layer.save()

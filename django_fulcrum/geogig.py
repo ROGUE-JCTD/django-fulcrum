@@ -11,8 +11,8 @@ import sys
 
 
 def import_to_geogig(repo_name, layer_name):
-    repo_dir = create_geogig_repo(repo_name)
-    if repo_dir:
+    repo_dir, created = create_geogig_repo(repo_name)
+    if created:
         set_geoserver_permissions(repo_dir)
     import_from_pg(repo_name, layer_name)
     create_geogig_datastore(repo_name, layer_name)
@@ -86,21 +86,23 @@ def is_geogig_layer_published(layer_name):
 def create_geogig_repo(repo_name,
                        user_name=getattr(settings, 'SITENAME', None),
                        user_email=getattr(settings, 'SERVER_EMAIL', None)):
+    created = False
     repo_dir = os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), repo_name)
     # geogigpy.Repository(repo_dir, init=True)
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
     if os.path.exists(os.path.join(repo_dir, '.geogig')):
         print("Cannot create new geogig repo {}, because one already exists.".format(repo_name))
-        return repo_dir
+        return repo_dir, created
     prev_dir = os.getcwd()
     os.chdir(os.path.dirname(repo_dir))
     subprocess.call(['/var/lib/geogig/bin/geogig', 'init', repo_name])
     os.chdir(repo_dir)
     subprocess.call(['/var/lib/geogig/bin/geogig', 'config', 'user.name', user_name])
     subprocess.call(['/var/lib/geogig/bin/geogig', 'config', 'user.email', user_email])
+    created = True
     os.chdir(prev_dir)
-    return repo_dir
+    return repo_dir, created
 
 
 def set_geoserver_permissions(dir_path):
@@ -110,13 +112,15 @@ def set_geoserver_permissions(dir_path):
     import grp
     if not os.path.exists(dir_path):
         return
-    uid = pwd.getpwnam("tomcat").pw_uid
-    gid = grp.getgrnam("geoservice").gr_gid
+    # uid = pwd.getpwnam("tomcat").pw_uid
+    # gid = grp.getgrnam("geoservice").gr_gid
     for root, dirs, files in os.walk(dir_path):
         for directory in dirs:
-            os.chown(os.path.join(root, directory), uid, gid)
+            os.chmod(os.path.join(root, directory), 0775)
+            # os.chmod(os.path.join(root, directory), uid, gid)
         for file_path in files:
-            os.chown(os.path.join(root, file_path), uid, gid)
+            os.chmod(os.path.join(root, file_path), 0775)
+            # os.chown(os.path.join(root, file_path), uid, gid)
 
 
 def delete_geogig_repo(repo_name):
@@ -261,7 +265,7 @@ def get_wfs_template():
     return wfs
 
 
-def get_wfs_transaction(feature_dict, layer):
+def get_wfs_transaction(features_dict, layer):
     from lxml import etree as ET
     ns_map = {"xsi": "http://www.w3.org/2001/XMLSchema-instance",
              "wfs":  "http://www.opengis.net/wfs",
@@ -273,17 +277,18 @@ def get_wfs_transaction(feature_dict, layer):
     # sheet = ET.ElementTree(root)
 
     insert = ET.SubElement(transaction, ET.QName(ns_map.get('wfs'), "Insert"), attrib={'handle':'Added {} feature(s) via django-fulcrum'.format(1)})
-    feature = ET.SubElement(insert, ET.QName(ns_map.get('feature'), layer))
-    geometry = ET.SubElement(feature, ET.QName(ns_map.get('feature'), 'wkb_geometry'))
-    point = ET.SubElement(geometry, ET.QName(ns_map.get('gml'), 'Point'), attrib={'srsName':'urn:ogc:def:crs:EPSG::4326'})
-    coordinates = ET.SubElement(point, ET.QName(ns_map.get('gml'), 'coordinates'), attrib={'decimal':'.',
-                                                                                           'cs':',',
-                                                                                           'ts':' '})
-    coords = feature_dict.get('geometry').get('coordinates')
-    coordinates.text = "{},{}".format(coords[1], coords[0])
-    for prop in feature_dict.get('properties'):
-        feature_element = ET.SubElement(feature, ET.QName(ns_map.get('feature'), prop))
-        feature_element.text = str(feature_dict.get('properties').get(prop))
+    for feature_dict in features_dict:
+        feature = ET.SubElement(insert, ET.QName(ns_map.get('feature'), layer))
+        geometry = ET.SubElement(feature, ET.QName(ns_map.get('feature'), 'wkb_geometry'))
+        point = ET.SubElement(geometry, ET.QName(ns_map.get('gml'), 'Point'), attrib={'srsName':'urn:ogc:def:crs:EPSG::4326'})
+        coordinates = ET.SubElement(point, ET.QName(ns_map.get('gml'), 'coordinates'), attrib={'decimal':'.',
+                                                                                               'cs':',',
+                                                                                               'ts':' '})
+        coords = feature_dict.get('geometry').get('coordinates')
+        coordinates.text = "{},{}".format(coords[1], coords[0])
+        for prop in feature_dict.get('properties'):
+            feature_element = ET.SubElement(feature, ET.QName(ns_map.get('feature'), prop))
+            feature_element.text = str(feature_dict.get('properties').get(prop))
     return ET.tostring(transaction, xml_declaration=True, encoding="UTF-8")
 
 
@@ -299,7 +304,7 @@ def post_wfs_transaction(wfst):
     ogc_server = get_ogc_server()
     auth=(ogc_server.get('USER'),
           ogc_server.get('PASSWORD'))
-    print(requests.post(url, auth=auth, data=wfst, headers=headers).text)
+    print(requests.post(url, auth=auth, data=wfst, headers=headers, verify=getattr(settings, "SSL_VERIFY", True)).text)
 
 
 def import_from_pg(repo_name, table_name):

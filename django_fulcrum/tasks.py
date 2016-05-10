@@ -29,7 +29,7 @@ from .s3_downloader import pull_all_s3_data
 from .models import FulcrumApiKey
 from .filters.run_filters import check_filters
 from fulcrum.exceptions import UnauthorizedException
-from .geogig import is_geogig_layer_published, import_to_geogig
+from .geogig import is_geogig_layer_published, import_to_geogig, get_wfs_transaction, post_wfs_transaction
 from django.db import connections
 from django.db.utils import ConnectionDoesNotExist
 from celery.execute import send_task
@@ -148,24 +148,25 @@ def task_filter_assets(filter_name, after_time_added, run_once=False, run_time=N
 def task_import_to_geogig(form_id, layer_name, media_keys):
     published = is_geogig_layer_published(layer_name)
     for grouped_features in changeset_chunks(form_id, layer_name):
-        pass
-        # if not published:
-        #     try:
-        #         database_alias = 'fulcrum'
-        #         connections[database_alias]
-        #     except ConnectionDoesNotExist:
-        #         database_alias = None
-        #     upload_to_db(grouped_features, layer_name, media_keys, database_alias=database_alias)
-        #     import_to_geogig('fulcrum_geogig', layer_name)
-        #     published = True
-        #     # DROP DB TABLE HERE?
-        # else:
-        #     grouped_features = prepare_features_for_geoshape(grouped_features, media_keys)
-        #     #wfs_to_geogig(grouped_features)
-        #     # upload to geogig
+        if not published:
+            try:
+                database_alias = 'fulcrum'
+                connections[database_alias]
+            except ConnectionDoesNotExist:
+                database_alias = None
+            upload_to_db(grouped_features, layer_name, media_keys, database_alias=database_alias)
+            import_to_geogig('fulcrum_geogig', layer_name)
+            published = True
+            # DROP DB TABLE HERE?
+        else:
+            grouped_features = prepare_features_for_geoshape(grouped_features, media_keys)
+            wfst = get_wfs_transaction(grouped_features, layer_name)
+            post_wfs_transaction(wfst)
+            #wfs_to_geogig(grouped_features)
+            # upload to geogig
         
-    # update_geoshape_layers()
-    # send_task('django_fulcrum.tasks.task_update_tiles', (layer_name))
+    update_geoshape_layers()
+    send_task('django_fulcrum.tasks.task_update_tiles', (layer_name,))
 
 
 def is_feature_task_locked():

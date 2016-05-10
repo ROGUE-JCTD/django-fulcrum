@@ -23,15 +23,15 @@ class DjangoFulcrumGeogigTests(TestCase):
 
     def test_create_geogig_repo(self):
         new_repo = 'fulcrum_geogig'
-        repo_dir = create_geogig_repo(new_repo)
-        if repo_dir:
+        repo_dir, created = create_geogig_repo(new_repo)
+        if created:
             set_geoserver_permissions(repo_dir)
-        repos = get_all_geogig_repos()
+        #repos = get_all_geogig_repos()
         import_from_pg(new_repo, "fulcrum_test3")
         create_geogig_datastore(new_repo, "fulcrum_test3")
         update_geoshape_layers()
-        for repo in repos:
-            print repo
+        #for repo in repos:
+        #    print repo
 
     # def test_get_geometry_point_element(self):
     #     test_feature = {
