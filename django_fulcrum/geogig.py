@@ -8,6 +8,7 @@ import os
 import subprocess
 import shutil
 import sys
+import json
 
 
 def import_to_geogig(repo_name, layer_name):
@@ -15,6 +16,7 @@ def import_to_geogig(repo_name, layer_name):
     if created:
         set_geoserver_permissions(repo_dir)
     import_from_pg(repo_name, layer_name)
+    #import_from_geojson(repo_name, layer_name, features)
     create_geogig_datastore(repo_name, layer_name)
 
 
@@ -112,16 +114,17 @@ def set_geoserver_permissions(dir_path):
     import grp
     if not os.path.exists(dir_path):
         return
-    # uid = pwd.getpwnam("tomcat").pw_uid
-    # gid = grp.getgrnam("geoservice").gr_gid
+    uid = pwd.getpwnam("tomcat").pw_uid
+    gid = grp.getgrnam("geoservice").gr_gid
     for root, dirs, files in os.walk(dir_path):
         for directory in dirs:
             os.chmod(os.path.join(root, directory), 0775)
-            # os.chmod(os.path.join(root, directory), uid, gid)
+            #os.chown(os.path.join(root, directory), uid, gid)
         for file_path in files:
             os.chmod(os.path.join(root, file_path), 0775)
-            # os.chown(os.path.join(root, file_path), uid, gid)
-
+            #os.chown(os.path.join(root, file_path), uid, gid)
+    #os.chown(dir_path, uid, gid)
+    os.chmod(dir_path, 0775)
 
 def delete_geogig_repo(repo_name):
     repos = get_all_geogig_repos
@@ -322,4 +325,23 @@ def import_from_pg(repo_name, table_name):
                      '--table', table_name])
     subprocess.call(['/var/lib/geogig/bin/geogig', 'add'])
     subprocess.call(['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis.'".format(table_name)])
+    os.chdir(prev_dir)
+
+
+def import_from_geojson(repo_name,table_name, features):
+    geojson = {"type": "FeatureCollection", "features": features}
+    print(geojson)
+    file_dir = get_ogc_server().get('GEOGIG_DATASTORE_DIR')
+    print("File dir: {}".format(file_dir))
+    file_path = os.path.join(file_dir, "{}.geojson".format(table_name))
+    print(file_path)
+    with open(file_path, 'w+') as file:
+        file.write(json.dumps(geojson))
+    repo_dir = os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), repo_name)
+    prev_dir = os.getcwd()
+    os.chdir(repo_dir)
+    subprocess.call(['/var/lib/geogig/bin/geogig', 'geojson', 'import', file_path, '-d', '{}'.format(table_name)])
+    subprocess.call(['/var/lib/geogig/bin/geogig', 'add'])
+    subprocess.call(['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported geojson.'"])
+    os.remove(file_path)
     os.chdir(prev_dir)

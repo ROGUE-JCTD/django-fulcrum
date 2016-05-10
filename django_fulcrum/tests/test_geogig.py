@@ -16,7 +16,7 @@ from __future__ import absolute_import
 from django.test import TestCase
 from ..django_fulcrum import update_geoshape_layers
 from ..geogig import get_all_geogig_repos, create_geogig_datastore, create_geogig_repo, get_geogig_repo_name, \
-    set_geoserver_permissions, import_from_pg, post_wfs_transaction
+    set_geoserver_permissions, import_from_pg, post_wfs_transaction, import_from_geojson
 
 
 class DjangoFulcrumGeogigTests(TestCase):
@@ -51,3 +51,26 @@ class DjangoFulcrumGeogigTests(TestCase):
     #     wfst = get_wfs_transaction(test_feature, 'fulcrum_test2')
     #     print(wfst)
     #     print(post_wfs_transaction(wfst))
+
+    # def test_create_geogig_repo_geojson(self):
+    #     new_repo = 'fulcrum_geogig'
+    #     test_feature = [{
+    #         "type": "Feature",
+    #         "geometry": {
+    #             "type": "Point",
+    #             "coordinates": [125.6, 10.1]
+    #         },
+    #         "properties": {
+    #             "name": "Dinagat Islands",
+    #             "version": 1,
+    #             "fulcrum_id": "123",
+    #             "meta": "OK"
+    #         }
+    #     }]
+    #     repo_dir, created = create_geogig_repo(new_repo)
+    #     if created:
+    #         set_geoserver_permissions(repo_dir)
+    #     import_from_geojson(new_repo,'fulcrum_test3', test_feature)
+    #     create_geogig_datastore(new_repo, "fulcrum_test3")
+    #     update_geoshape_layers()
+
