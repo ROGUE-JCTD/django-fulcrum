@@ -11,14 +11,17 @@ import sys
 
 
 def import_to_geogig(repo_name, layer_name):
+    repo_name = layer_name  # this should be changed once we can import things into existing geogig/geoserver repos.
     repo_dir, created = create_geogig_repo(repo_name)
+    import_from_pg(repo_name, layer_name)
     if created:
         set_geoserver_permissions(repo_dir)
-    import_from_pg(repo_name, layer_name)
-    create_geogig_datastore(repo_name, layer_name)
+    if created:
+        publish_geogig_layer(repo_name, layer_name)
+        set_geoserver_permissions(repo_dir)
 
 
-def create_geogig_datastore(store_name, layer_name):
+def publish_geogig_layer(store_name, layer_name):
     """
     Args:
         store_name: name of geogig repo
@@ -83,6 +86,7 @@ def is_geogig_layer_published(layer_name):
     else:
         return True
 
+
 def create_geogig_repo(repo_name,
                        user_name=getattr(settings, 'SITENAME', None),
                        user_email=getattr(settings, 'SERVER_EMAIL', None)):
@@ -114,13 +118,18 @@ def set_geoserver_permissions(dir_path):
         return
     # uid = pwd.getpwnam("tomcat").pw_uid
     # gid = grp.getgrnam("geoservice").gr_gid
-    for root, dirs, files in os.walk(dir_path):
-        for directory in dirs:
-            os.chmod(os.path.join(root, directory), 0775)
-            # os.chmod(os.path.join(root, directory), uid, gid)
-        for file_path in files:
-            os.chmod(os.path.join(root, file_path), 0775)
-            # os.chown(os.path.join(root, file_path), uid, gid)
+    try:
+        os.chmod(dir_path, 0775)
+        for root, dirs, files in os.walk(dir_path):
+            for directory in dirs:
+                os.chmod(os.path.join(root, directory), 0775)
+                # os.chmod(os.path.join(root, directory), uid, gid)
+            for file_path in files:
+                os.chmod(os.path.join(root, file_path), 0775)
+                # os.chown(os.path.join(root, file_path), uid, gid)
+    except OSError as e:
+        print("Could not change permissions for all repo files.")
+        print("The error is {}".format(e.message))
 
 
 def delete_geogig_repo(repo_name):
@@ -217,75 +226,30 @@ def get_ogc_server(alias=None):
             return ogc_server.get('default')
 
 
-def send_wfs(xml=None, url=None):
-    client = requests.session()
-    URL = 'https://{}/account/login'.format('geoshape.dev')
-    client.get(URL, verify=False)
-    csrftoken = client.cookies['csrftoken']
-    login_data = dict(username='admin', password='geoshape', csrfmiddlewaretoken=csrftoken)
-    client_resp = client.post(URL, data=login_data, headers=dict(Referer=URL), verify=False)
-    print("login reponse:{}".format(client_resp.status_code))
-    print("login reponse:{}".format(str(client_resp.headers)))
-    url = "https://geoshape.dev/proxy/"
-    params = {"url": "https://geoshape.dev/geoserver/wfs/WfsDispatcher"}
-    headers = {'Referer': "https://geoshape.dev/maploom/maps/new?layer=geonode%3Afulcrum_starbucks",
-               'X-CSRFToken': client.cookies['csrftoken'],
-               'Authorization': ""}
-    data = geojson_to_wfs()
-    response = client.post(url, data=data, headers=headers, params=params, verify=False)
-    print(response.status_code)
-    print(str(response.headers))
-    print(str(response.request.headers))
-    print(str(client.cookies))
-    body = handle_double_zip(response)
-    with open('/var/lib/geonode/fulcrum_data/output.html', 'wb') as out_html:
-        out_html.write(body.encode('utf-8'))
-
-
-def geojson_to_wfs(geojson=None):
-    root = ET.fromstring(get_wfs_template())
-    return ET.tostring(root)
-
-
-def get_wfs_template():
-    import xml.etree.ElementTree as ET
-    ET.register_namespace('wfs', "http://www.opengis.net/wfs")
-    ET.register_namespace('gml', "http://www.opengis.org/gml")
-    ET.register_namespace('feature', "http://www.geonode.org/")
-    wfs_template = '<?xml version="1.0" encoding="UTF-8"?>\
-    <wfs:Transaction xmlns:wfs="http://www.opengis.net/wfs" ' \
-                   'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' \
-                   'service="WFS" version="1.0.0" ' \
-                   'handle="Added 1 feature." ' \
-                   'xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.0.0/wfs.xsd">\
-        <wfs:Insert handle="Added 1 feature to '' via MapLoom.">\
-        </wfs:Insert>\
-    </wfs:Transaction>'
-    wfs = ET.fromstring(wfs_template)
-    return wfs
-
-
-def get_wfs_transaction(features_dict, layer):
+def prepare_wfs_transaction(features_dict, layer):
     from lxml import etree as ET
     ns_map = {"xsi": "http://www.w3.org/2001/XMLSchema-instance",
-             "wfs":  "http://www.opengis.net/wfs",
+              "wfs": "http://www.opengis.net/wfs",
               "gml": "http://www.opengis.org/gml",
-              "feature": "http://www.geonode.org/"}
+              "feature": "http://www.geonode.org/",
+              "ogc": "http://www.opengis.net/ogc"}
 
     transactionName = ET.QName("http://www.opengis.net/wfs", 'Transaction')
     transaction = ET.Element(transactionName, nsmap=ns_map)
-    # sheet = ET.ElementTree(root)
-
-    insert = ET.SubElement(transaction, ET.QName(ns_map.get('wfs'), "Insert"), attrib={'handle':'Added {} feature(s) via django-fulcrum'.format(1)})
+    insert = ET.SubElement(transaction, ET.QName(ns_map.get('wfs'), "Insert"),
+                           attrib={'handle': 'Added {} feature(s) via django-fulcrum'.format(len(features_dict))})
     for feature_dict in features_dict:
         feature = ET.SubElement(insert, ET.QName(ns_map.get('feature'), layer))
         geometry = ET.SubElement(feature, ET.QName(ns_map.get('feature'), 'wkb_geometry'))
-        point = ET.SubElement(geometry, ET.QName(ns_map.get('gml'), 'Point'), attrib={'srsName':'urn:ogc:def:crs:EPSG::4326'})
-        coordinates = ET.SubElement(point, ET.QName(ns_map.get('gml'), 'coordinates'), attrib={'decimal':'.',
-                                                                                               'cs':',',
-                                                                                               'ts':' '})
+        point = ET.SubElement(geometry, ET.QName(ns_map.get('gml'), 'Point'),
+                              attrib={'srsName': 'urn:ogc:def:crs:EPSG::4326'})
+        coordinates = ET.SubElement(point, ET.QName(ns_map.get('gml'), 'coordinates'), attrib={'decimal': '.',
+                                                                                               'cs': ',',
+                                                                                               'ts': ' '})
         coords = feature_dict.get('geometry').get('coordinates')
         coordinates.text = "{},{}".format(coords[1], coords[0])
+        ET.SubElement(feature, ET.QName(ns_map.get('ogc'), 'FeatureId'),
+                      attrib={'fid': feature_dict.get('properties').get('fulcrum_id')})
         for prop in feature_dict.get('properties'):
             feature_element = ET.SubElement(feature, ET.QName(ns_map.get('feature'), prop))
             feature_element.text = str(feature_dict.get('properties').get(prop))
@@ -302,9 +266,9 @@ def post_wfs_transaction(wfst):
     # s.post(url_login, params={'username': 'admin', 'password': 'geoserver'})
     headers = {'Content-Type': 'application/xml'}
     ogc_server = get_ogc_server()
-    auth=(ogc_server.get('USER'),
-          ogc_server.get('PASSWORD'))
-    print(requests.post(url, auth=auth, data=wfst, headers=headers, verify=getattr(settings, "SSL_VERIFY", True)).text)
+    auth = (ogc_server.get('USER'),
+            ogc_server.get('PASSWORD'))
+    requests.post(url, auth=auth, data=wfst, headers=headers, verify=getattr(settings, "SSL_VERIFY", True))
 
 
 def import_from_pg(repo_name, table_name):
@@ -314,12 +278,14 @@ def import_from_pg(repo_name, table_name):
     prev_dir = os.getcwd()
     os.chdir(repo_dir)
     subprocess.call(['/var/lib/geogig/bin/geogig', 'pg', 'import',
-                     '--database', 'geoshape_data', #db_conn.settings_dict.get('NAME'),
+                     '--database', 'geoshape_data',  # db_conn.settings_dict.get('NAME'),
                      '--host', db_conn.settings_dict.get('HOST'),
                      '--port', db_conn.settings_dict.get('PORT'),
                      '--user', db_conn.settings_dict.get('USER'),
                      '--password', db_conn.settings_dict.get('PASSWORD'),
+                     '--fid-attrib', 'fulcrum_id',
                      '--table', table_name])
     subprocess.call(['/var/lib/geogig/bin/geogig', 'add'])
-    subprocess.call(['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis.'".format(table_name)])
+    subprocess.call(
+            ['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis.'".format(table_name)])
     os.chdir(prev_dir)

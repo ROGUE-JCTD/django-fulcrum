@@ -29,7 +29,7 @@ from .s3_downloader import pull_all_s3_data
 from .models import FulcrumApiKey
 from .filters.run_filters import check_filters
 from fulcrum.exceptions import UnauthorizedException
-from .geogig import is_geogig_layer_published, import_to_geogig, get_wfs_transaction, post_wfs_transaction
+from .geogig import is_geogig_layer_published, import_to_geogig, prepare_wfs_transaction, post_wfs_transaction
 from django.db import connections
 from django.db.utils import ConnectionDoesNotExist
 from celery.execute import send_task
@@ -160,11 +160,9 @@ def task_import_to_geogig(form_id, layer_name, media_keys):
             # DROP DB TABLE HERE?
         else:
             grouped_features = prepare_features_for_geoshape(grouped_features, media_keys)
-            wfst = get_wfs_transaction(grouped_features, layer_name)
+            wfst = prepare_wfs_transaction(grouped_features, layer_name)
+            print(wfst)
             post_wfs_transaction(wfst)
-            #wfs_to_geogig(grouped_features)
-            # upload to geogig
-        
     update_geoshape_layers()
     send_task('django_fulcrum.tasks.task_update_tiles', (layer_name,))
 

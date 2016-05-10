@@ -202,15 +202,14 @@ class DjangoFulcrum:
             with transaction.atomic():
                 layer.layer_date = int(latest_time)
                 layer.save()
+        if upload_to_geogig:
+            send_task('django_fulcrum.tasks.task_import_to_geogig', (form.get('id'), layer.layer_name, media_map))
         # This is added again after the loop because if the loop finishes all points would have been processed,
         # however since some points may have been filtered we want their times to be included so as to not,
         # continually request them, but only after we are sure that we got all valid points where they need to be.
         with transaction.atomic():
             layer.layer_date = int(latest_time)
             layer.save()
-
-        if upload_to_geogig:
-            send_task('django_fulcrum.tasks.task_import_to_geogig', (form.get('id'), layer.layer_name, media_map))
         print("RESULTS\n---------------")
         print("Total Records Pulled: {}".format(pulled_record_count))
         print("Total Records Passed Filter: {}".format(total_passed_features))
