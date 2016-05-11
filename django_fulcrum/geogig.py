@@ -291,7 +291,6 @@ def import_from_pg(repo_name, table_name):
             ['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis.'".format(table_name)])
     os.chdir(prev_dir)
 
-
 def import_from_geojson(repo_name,table_name, features):
     geojson = {"type": "FeatureCollection", "features": features}
     print(geojson)
@@ -309,3 +308,16 @@ def import_from_geojson(repo_name,table_name, features):
     subprocess.call(['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported geojson.'"])
     os.remove(file_path)
     os.chdir(prev_dir)
+
+
+def recalculate_featuretype_extent(datastore, layer_name):
+    if not getattr(settings, "SITEURL", None):
+        return None
+    url = "{}/geoserver/rest/workspaces/geonode/datastores/{}/featuretypes/{}?recalculate=nativebbox,latlonbbox".format(
+        getattr(settings, "SITEURL", None).rstrip('/'), datastore, layer_name)
+    headers = {'Content-Type': 'application/xml'}
+    xml = '<featureType><name>{}</name><enabled>true</enabled></featureType>'.format(layer_name)
+    ogc_server = get_ogc_server()
+    auth = (ogc_server.get('USER'),
+            ogc_server.get('PASSWORD'))
+    requests.put(url, xml, auth=auth, headers=headers, verify=getattr(settings, "SSL_VERIFY", True))
