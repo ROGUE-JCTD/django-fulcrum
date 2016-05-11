@@ -231,16 +231,18 @@ def prepare_wfs_transaction(features_dict, layer):
     from lxml import etree as ET
     ns_map = {"xsi": "http://www.w3.org/2001/XMLSchema-instance",
               "wfs": "http://www.opengis.net/wfs",
-              "gml": "http://www.opengis.org/gml",
+              "gml": "http://www.opengis.net/gml",
               "feature": "http://www.geonode.org/",
               "ogc": "http://www.opengis.net/ogc"}
 
     transactionName = ET.QName("http://www.opengis.net/wfs", 'Transaction')
     transaction = ET.Element(transactionName, nsmap=ns_map)
     insert = ET.SubElement(transaction, ET.QName(ns_map.get('wfs'), "Insert"),
-                           attrib={'handle': 'Added {} feature(s) via django-fulcrum'.format(len(features_dict))})
+                           attrib={'idgen':'UseExisting', 'handle': 'Added {} feature(s) via django-fulcrum'.format(len(features_dict))})
+
     for feature_dict in features_dict:
-        feature = ET.SubElement(insert, ET.QName(ns_map.get('feature'), layer))
+        fulcrum_id = feature_dict.get('properties').get('fulcrum_id')
+        feature = ET.SubElement(insert, ET.QName(ns_map.get('feature'), layer), attrib={'fid': fulcrum_id})
         geometry = ET.SubElement(feature, ET.QName(ns_map.get('feature'), 'wkb_geometry'))
         point = ET.SubElement(geometry, ET.QName(ns_map.get('gml'), 'Point'),
                               attrib={'srsName': 'urn:ogc:def:crs:EPSG::4326'})
@@ -249,8 +251,6 @@ def prepare_wfs_transaction(features_dict, layer):
                                                                                                'ts': ' '})
         coords = feature_dict.get('geometry').get('coordinates')
         coordinates.text = "{},{}".format(coords[1], coords[0])
-        ET.SubElement(feature, ET.QName(ns_map.get('ogc'), 'FeatureId'),
-                      attrib={'fid': feature_dict.get('properties').get('fulcrum_id')})
         for prop in feature_dict.get('properties'):
             feature_element = ET.SubElement(feature, ET.QName(ns_map.get('feature'), prop))
             feature_element.text = str(feature_dict.get('properties').get(prop))
@@ -269,7 +269,7 @@ def post_wfs_transaction(wfst):
     ogc_server = get_ogc_server()
     auth = (ogc_server.get('USER'),
             ogc_server.get('PASSWORD'))
-    requests.post(url, auth=auth, data=wfst, headers=headers, verify=getattr(settings, "SSL_VERIFY", True))
+    print(requests.post(url, auth=auth, data=wfst, headers=headers, verify=getattr(settings, "SSL_VERIFY", True)).text)
 
 
 def import_from_pg(repo_name, table_name):
