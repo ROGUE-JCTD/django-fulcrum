@@ -151,7 +151,7 @@ class Feature(models.Model):
     layer = models.ForeignKey(Layer, on_delete=models.CASCADE, default="")
     feature_data = models.TextField()
     feature_added_time = models.DateTimeField(default=timezone.now())
-    feature_changeset = models.ForeignKey(Changesets, default=None, blank=True, null=True)
+    #feature_changeset = models.ForeignKey(Changesets, default=None, blank=True, null=True)
 
     class Meta:
         unique_together = (("feature_uid", "feature_version"),)

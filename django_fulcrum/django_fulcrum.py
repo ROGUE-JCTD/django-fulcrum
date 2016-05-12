@@ -39,6 +39,8 @@ from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
 from celery.execute import send_task
 from django.core.exceptions import ObjectDoesNotExist
+from .geogig import recalculate_featuretype_extent, is_geogig_layer_published, \
+    post_wfs_transaction, import_to_geogig, prepare_wfs_transaction
 
 
 class DjangoFulcrum:
@@ -109,7 +111,7 @@ class DjangoFulcrum:
         element_map = self.get_element_map(form)
         media_map = self.get_media_map(form, element_map)
         layer = Layer.objects.get(layer_uid=form.get('id'))
-        changeset_dict = get_changeset_models()
+        #changeset_dict = get_changeset_models()
         upload_to_geogig = getattr(settings, "UPLOAD_TO_GEOGIG", False)
         if layer:
             records = self.get_latest_records(layer)
@@ -133,9 +135,10 @@ class DjangoFulcrum:
 
         latest_time = imported_features[-1].get('properties').get(time_field)
         total_passed_features = 0
-        for grouped_features in chunks(imported_features, 100):
+        for grouped_features in time_chunks(imported_features, time_field, 2):
             if not grouped_features:
                break
+            print grouped_features
             filtered_features, filtered_feature_count = filter_features({"features": grouped_features})
             total_passed_features += filtered_feature_count
             uploads = []
@@ -178,16 +181,18 @@ class DjangoFulcrum:
                     #     changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
                     # else:
                     #     changeset_id = None
-                    try:
-                        record = self.conn.records.find(feature.get('properties').get('fulcrum_id'))
-                        changeset_id = changeset_dict.get(record.get('record').get('changeset_id'))
-                    except NotFoundException:
-                        changeset_id = None
+
+                    # GET CHANGESET IDS FOR INDIVIDUAL RECORDS
+                    # try:
+                    #     record = self.conn.records.find(feature.get('properties').get('fulcrum_id'))
+                    #     changeset_id = changeset_dict.get(record.get('record').get('changeset_id'))
+                    # except NotFoundException:
+                    #     changeset_id = None
                     write_feature(feature.get('properties').get('fulcrum_id'),
                                   feature.get('properties').get('version'),
                                   layer,
-                                  feature,
-                                  changeset_id)
+                                  feature)
+                                  #changeset_id)
                     uploads += [feature]
             try:
                 database_alias = 'fulcrum'
@@ -199,11 +204,29 @@ class DjangoFulcrum:
                     publish_layer(layer.layer_name, database_alias=database_alias)
                     update_geoshape_layers()
                     send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
+            else:
+                published = is_geogig_layer_published(layer.layer_name)
+                if not published:
+                    try:
+                        database_alias = 'fulcrum'
+                        connections[database_alias]
+                    except ConnectionDoesNotExist:
+                        database_alias = None
+                    upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias)
+                    import_to_geogig('fulcrum_geogig', layer.layer_name)
+                    published = True
+                # DROP DB TABLE HERE?
+                else:
+                    uploads = prepare_features_for_geoshape(uploads, media_map)
+                    wfst = prepare_wfs_transaction(uploads, layer.layer_name)
+                    print(wfst)
+                    post_wfs_transaction(wfst)
+                    recalculate_featuretype_extent(layer.layer_name, layer.layer_name)
+                update_geoshape_layers()
+                send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
             with transaction.atomic():
                 layer.layer_date = int(latest_time)
                 layer.save()
-        if upload_to_geogig:
-            send_task('django_fulcrum.tasks.task_import_to_geogig', (form.get('id'), layer.layer_name, media_map))
         # This is added again after the loop because if the loop finishes all points would have been processed,
         # however since some points may have been filtered we want their times to be included so as to not,
         # continually request them, but only after we are sure that we got all valid points where they need to be.
@@ -256,7 +279,7 @@ class DjangoFulcrum:
             if created:
                 print("The layer {}({}) was created.".format(layer.layer_name, layer.layer_uid))
             print("Getting records for {}".format(layer.layer_name))
-            self.write_changesets_from_fulcrum(form.get('id'))
+            #self.write_changesets_from_fulcrum(form.get('id'))
             self.update_records(form)
 
     def convert_to_geojson(self, records, element_map, media_map):
@@ -520,6 +543,28 @@ def changeset_chunks(form_id, layer_name):
         yield get_features_by_changeset(None, layer_name)
 
 
+def time_chunks(a_list, time_field, time_delta):
+    """
+    Args:
+        a_list: A list of features
+        time_field: Name of the time field to sort by
+        time_delta: Change in time (in seconds) to chunk by
+    Returns:
+        A sublist of the features
+    """
+    feature_index = 0
+    yield_list = []
+    while feature_index < len(a_list):
+        yield_list += [a_list[feature_index]]
+        current_time = a_list[feature_index]['properties'][time_field]
+        next_time = a_list[feature_index + 1]['properties'][time_field] if feature_index + 1 < len(a_list) else None
+        if next_time and next_time - current_time <= time_delta:
+            feature_index += 1
+        else:
+            yield yield_list
+            yield_list = []
+            feature_index += 1
+
 def chunks(a_list, chunk_size):
     """
 
@@ -588,11 +633,11 @@ def process_fulcrum_data(f):
     file_path = os.path.join(get_data_dir(), archive_name)
     if save_file(f, file_path):
         unzip_file(file_path)
-        for folder, subs, files in os.walk(os.path.join(get_data_dir(), os.path.splitext(file_path)[0])):
-            for filename in files:
-                if '.geojson' in filename and '_changesets' in filename:
-                    changeset_filepath = os.path.join(folder, filename)
-                    write_changesets_from_file(changeset_filepath, filename[:-19])
+        # for folder, subs, files in os.walk(os.path.join(get_data_dir(), os.path.splitext(file_path)[0])):
+        #     for filename in files:
+        #         if '.geojson' in filename and '_changesets' in filename:
+        #             changeset_filepath = os.path.join(folder, filename)
+        #             write_changesets_from_file(changeset_filepath, filename[:-19])
         for folder, subs, files in os.walk(os.path.join(get_data_dir(), os.path.splitext(file_path)[0])):
             for filename in files:
                 if '.geojson' in filename and '_changesets' not in filename:
@@ -697,7 +742,7 @@ def upload_geojson(file_path=None, geojson=None):
     layer_name = layer.layer_name
     media_keys = get_update_layer_media_keys(media_keys=find_media_keys(features), layer=layer)
     field_map = get_field_map(features)
-    changeset_dict = get_changeset_models()
+    # changeset_dict = get_changeset_models()
     prototype = get_prototype(field_map)
     for feature in features:
         if not feature:
@@ -740,15 +785,16 @@ def upload_geojson(file_path=None, geojson=None):
             feature['properties']['fulcrum_id'] = feature.get('properties').get('id')
 
         key_name = 'fulcrum_id'
-        if feature.get('properties').get('changeset_id') and feature.get('properties').get('changeset_id') in changeset_dict:
-            changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
-        else:
-            changeset_id = None
+        # USED IF COMMITING BY CHANGESET
+        # if feature.get('properties').get('changeset_id') and feature.get('properties').get('changeset_id') in changeset_dict:
+        #     changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
+        # else:
+        #     changeset_id = None
         write_feature(feature.get('properties').get(key_name),
                       feature.get('properties').get('version'),
                       layer,
-                      feature,
-                      changeset_id)
+                      feature)
+                      #changeset_id)
         uploads += [feature]
         count += 1
 
@@ -759,12 +805,31 @@ def upload_geojson(file_path=None, geojson=None):
 
     table_name = layer.layer_name
 
-    if upload_to_db(uploads, table_name, media_keys, database_alias=database_alias):
-        if not upload_to_geogig:
+
+    if not upload_to_geogig:
+        if upload_to_db(uploads, table_name, media_keys, database_alias=database_alias):
             publish_layer(table_name, database_alias=database_alias)
             update_geoshape_layers()
-    if upload_to_geogig:
-            send_task('django_fulcrum.tasks.task_import_to_geogig', (file_basename, layer_name, media_keys))
+    else:
+        published = is_geogig_layer_published(layer.layer_name)
+        if not published:
+            try:
+                database_alias = 'fulcrum'
+                connections[database_alias]
+            except ConnectionDoesNotExist:
+                database_alias = None
+            upload_to_db(uploads, layer.layer_name, media_keys, database_alias=database_alias)
+            import_to_geogig('fulcrum_geogig', layer.layer_name)
+            published = True
+        # DROP DB TABLE HERE?
+        else:
+            uploads = prepare_features_for_geoshape(uploads, media_keys)
+            wfst = prepare_wfs_transaction(uploads, layer.layer_name)
+            print(wfst)
+            post_wfs_transaction(wfst)
+            recalculate_featuretype_extent(layer.layer_name, layer.layer_name)
+        update_geoshape_layers()
+        send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
     return True
 
 
@@ -841,7 +906,7 @@ def write_layer(name, layer_id='', date=0, media_keys=None):
             return layer, False
 
 
-def write_feature(key, version, layer, feature_data, feature_changeset):
+def write_feature(key, version, layer, feature_data):# feature_changeset):
     """
 
     Args:
@@ -849,7 +914,7 @@ def write_feature(key, version, layer, feature_data, feature_changeset):
         version: A version number for the feature as an integer, usually provided by Fulcrum.
         layer: The layer model object, which represents the Fulcrum App (AKA the layer).
         feature_data: The actual feature data as a dict, mapped like a geojson.
-        feature_changeset: A changeset model object acting as the foreign key
+        # feature_changeset: A changeset model object acting as the foreign key
 
     Returns:
         The feature model object.
@@ -857,7 +922,7 @@ def write_feature(key, version, layer, feature_data, feature_changeset):
     with transaction.atomic():
         feature, feature_created = Feature.objects.get_or_create(feature_uid=key,
                                                                  feature_version=version,
-                                                                 feature_changeset=feature_changeset,
+                                                                 #feature_changeset=feature_changeset,
                                                                  defaults={'layer': layer,
                                                                            'feature_data': json.dumps(feature_data)})
         return feature

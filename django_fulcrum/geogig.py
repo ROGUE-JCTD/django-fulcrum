@@ -320,4 +320,4 @@ def recalculate_featuretype_extent(datastore, layer_name):
     ogc_server = get_ogc_server()
     auth = (ogc_server.get('USER'),
             ogc_server.get('PASSWORD'))
-    requests.put(url, xml, auth=auth, headers=headers, verify=getattr(settings, "SSL_VERIFY", True))
+    print requests.put(url, xml, auth=auth, headers=headers, verify=getattr(settings, "SSL_VERIFY", True))
