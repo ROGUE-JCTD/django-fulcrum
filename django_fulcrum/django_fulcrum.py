@@ -222,7 +222,7 @@ class DjangoFulcrum:
                     print(wfst)
                     post_wfs_transaction(wfst)
                     recalculate_featuretype_extent(layer.layer_name, layer.layer_name)
-                update_geoshape_layers()
+
                 send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
             with transaction.atomic():
                 layer.layer_date = int(latest_time)
@@ -233,6 +233,8 @@ class DjangoFulcrum:
         with transaction.atomic():
             layer.layer_date = int(latest_time)
             layer.save()
+        if upload_to_geogig:
+            update_geoshape_layers()
         print("RESULTS\n---------------")
         print("Total Records Pulled: {}".format(pulled_record_count))
         print("Total Records Passed Filter: {}".format(total_passed_features))
