@@ -137,7 +137,7 @@ class DjangoFulcrum:
         total_passed_features = 0
         for grouped_features in time_chunks(imported_features, time_field, 2):
             if not grouped_features:
-               break
+               continue
             print grouped_features
             filtered_features, filtered_feature_count = filter_features({"features": grouped_features})
             total_passed_features += filtered_feature_count
@@ -194,36 +194,36 @@ class DjangoFulcrum:
                                   feature)
                                   #changeset_id)
                     uploads += [feature]
-            try:
-                database_alias = 'fulcrum'
-                connections[database_alias]
-            except ConnectionDoesNotExist:
-                database_alias = None
-            if not upload_to_geogig:
-                if upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias):
-                    publish_layer(layer.layer_name, database_alias=database_alias)
+            if uploads:
+                try:
+                    database_alias = 'fulcrum'
+                    connections[database_alias]
+                except ConnectionDoesNotExist:
+                    database_alias = None
+                if not upload_to_geogig:
+                    if upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias):
+                        publish_layer(layer.layer_name, database_alias=database_alias)
+                        update_geoshape_layers()
+                        send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
+                else:
+                    published = is_geogig_layer_published(layer.layer_name)
+                    if not published:
+                        try:
+                            database_alias = 'fulcrum'
+                            connections[database_alias]
+                        except ConnectionDoesNotExist:
+                            database_alias = None
+                        upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias)
+                        import_to_geogig('fulcrum_geogig', layer.layer_name)
+                        published = True
+                    # DROP DB TABLE HERE?
+                    else:
+                        uploads = prepare_features_for_geoshape(uploads, media_map)
+                        wfst = prepare_wfs_transaction(uploads, layer.layer_name)
+                        post_wfs_transaction(wfst)
+                        recalculate_featuretype_extent(layer.layer_name, layer.layer_name)
                     update_geoshape_layers()
                     send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
-            else:
-                published = is_geogig_layer_published(layer.layer_name)
-                if not published:
-                    try:
-                        database_alias = 'fulcrum'
-                        connections[database_alias]
-                    except ConnectionDoesNotExist:
-                        database_alias = None
-                    upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias)
-                    import_to_geogig('fulcrum_geogig', layer.layer_name)
-                    published = True
-                # DROP DB TABLE HERE?
-                else:
-                    uploads = prepare_features_for_geoshape(uploads, media_map)
-                    wfst = prepare_wfs_transaction(uploads, layer.layer_name)
-                    print(wfst)
-                    post_wfs_transaction(wfst)
-                    recalculate_featuretype_extent(layer.layer_name, layer.layer_name)
-
-                send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
             with transaction.atomic():
                 layer.layer_date = int(latest_time)
                 layer.save()
@@ -234,7 +234,7 @@ class DjangoFulcrum:
             layer.layer_date = int(latest_time)
             layer.save()
         if upload_to_geogig:
-            update_geoshape_layers()
+
         print("RESULTS\n---------------")
         print("Total Records Pulled: {}".format(pulled_record_count))
         print("Total Records Passed Filter: {}".format(total_passed_features))

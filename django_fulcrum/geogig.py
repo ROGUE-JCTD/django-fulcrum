@@ -287,8 +287,11 @@ def import_from_pg(repo_name, table_name):
                      '--fid-attrib', 'fulcrum_id',
                      '--table', table_name])
     subprocess.call(['/var/lib/geogig/bin/geogig', 'add'])
+    cur = db_conn.cursor()
+    cur.execute("SELECT count(*) FROM {};".format(table_name))
+    count = cur.rowcount
     subprocess.call(
-            ['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis.'".format(table_name)])
+            ['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis, added {} feature(s).'".format(table_name, count)])
     os.chdir(prev_dir)
 
 def import_from_geojson(repo_name,table_name, features):
