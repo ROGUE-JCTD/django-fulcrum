@@ -12,6 +12,14 @@ import json
 
 
 def import_to_geogig(repo_name, layer_name):
+    """
+    Creates a geogig repo, imports initial layer data to the repo, and publishes the layer
+    Args:
+        repo_name: A name for the datastore to be created in geoserver
+        layer_name: The layer name to be published
+    Returns:
+        No return
+    """
     repo_name = layer_name  # this should be changed once we can import things into existing geogig/geoserver repos.
     repo_dir, created = create_geogig_repo(repo_name)
     import_from_pg(repo_name, layer_name)
@@ -24,8 +32,10 @@ def import_to_geogig(repo_name, layer_name):
 
 def publish_geogig_layer(store_name, layer_name):
     """
+    Takes a layer in a geoserver datastore and publishes it
     Args:
         store_name: name of geogig repo
+        layer_name: name of the layer to be published
     Returns:
         None
     """
@@ -73,6 +83,13 @@ def publish_geogig_layer(store_name, layer_name):
 
 
 def is_geogig_layer_published(layer_name):
+    """
+    Check if the layer has been published in geoserver
+    Args:
+        layer_name: The layer to be checked
+    Returns:
+        If the layer has been published yet (True/False)
+    """
     ogc_server = get_ogc_server()
     url = "{}/rest".format(ogc_server.get('LOCATION').rstrip('/'))
     cat = Catalog(url)
@@ -91,6 +108,15 @@ def is_geogig_layer_published(layer_name):
 def create_geogig_repo(repo_name,
                        user_name=getattr(settings, 'SITENAME', None),
                        user_email=getattr(settings, 'SERVER_EMAIL', None)):
+    """
+    Creates a new geogig repo in the geogig datastore directory
+    Args:
+        repo_name: Name to be used for geogig repo
+        user_name: User name to set for the geogig repo
+        user_email: Email address to set for the geogig repo
+    Returns:
+        A tuple containing the repo directory path and boolean for if it was created
+    """
     created = False
     repo_dir = os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), repo_name)
     # geogigpy.Repository(repo_dir, init=True)
@@ -111,6 +137,13 @@ def create_geogig_repo(repo_name,
 
 
 def set_geoserver_permissions(dir_path):
+    """
+    Sets permissions for a geogig repo so that geoserver can properly access it
+    Args:
+        dir_path: Path to the repo for which permissions will be changed
+    Returns:
+        Nothing
+    """
     if not 'linux' in sys.platform:
         return
     import pwd
@@ -134,6 +167,13 @@ def set_geoserver_permissions(dir_path):
 
 
 def delete_geogig_repo(repo_name):
+    """
+    Remove a geogig from the geogig datastore directory
+    Args:
+        repo_name: The name of repo to be deleted
+    Returns:
+        No return
+    """
     repos = get_all_geogig_repos
     repo_id = ''
     for id, name in repos:
@@ -156,6 +196,10 @@ def get_geogig_repo_name(repo):
 
 
 def get_all_geogig_repos():
+    """
+    Call to geoserver to find all geogig repos available
+    Returns: Dict containing repo ids and names
+    """
     response = requests.get(get_geogig_base_url(),
                             verify=False)
 
@@ -228,6 +272,14 @@ def get_ogc_server(alias=None):
 
 
 def prepare_wfs_transaction(features_dict, layer):
+    """
+    Creates an xml string for WFS-Transaction to insert features to a layer
+    Args:
+        features_dict: An array of geojson features to be inserted
+        layer: The name of the target layer
+    Returns:
+        An xml WFS-T in string format
+    """
     from lxml import etree as ET
     ns_map = {"xsi": "http://www.w3.org/2001/XMLSchema-instance",
               "wfs": "http://www.opengis.net/wfs",
@@ -258,6 +310,13 @@ def prepare_wfs_transaction(features_dict, layer):
 
 
 def post_wfs_transaction(wfst):
+    """
+    Posts a WFS-T to geogig layer exposed through geoserver
+    Args:
+        wfst: A WFS-T in string format
+    Returns:
+        None if siteurl is not found
+    """
     if not getattr(settings, "SITEURL", None):
         return None
     # url_login = "{}/account/login".format(getattr(settings, "SITEURL", None).rstrip('/'))
@@ -273,6 +332,14 @@ def post_wfs_transaction(wfst):
 
 
 def import_from_pg(repo_name, table_name):
+    """
+    Import a table from postgis into a unpublished geogig repo
+    Args:
+        repo_name: Name of target geogig repo
+        table_name: Name of table in database to be imported (also will be the layer name once in geogig)
+    Returns:
+        No return
+    """
     from django.db import connections
     db_conn = connections['fulcrum']
     repo_dir = os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), repo_name)
@@ -296,9 +363,17 @@ def import_from_pg(repo_name, table_name):
     os.chdir(prev_dir)
 
 def import_from_geojson(repo_name,table_name, features):
+    """
+    Import a geojson into a unpublished geogig repo
+    Args:
+        repo_name: Name of the target geogig repo
+        table_name: Name for the layer once in geogig
+        features: An array of geojson features
+    Returns:
+        No return
+    """
     geojson = {"type": "FeatureCollection", "features": features}
     file_dir = get_ogc_server().get('GEOGIG_DATASTORE_DIR')
-    print("File dir: {}".format(file_dir))
     file_path = os.path.join(file_dir, "{}.geojson".format(table_name))
     with open(file_path, 'w+') as file:
         file.write(json.dumps(geojson))
@@ -313,6 +388,15 @@ def import_from_geojson(repo_name,table_name, features):
 
 
 def recalculate_featuretype_extent(datastore, layer_name):
+    """
+    Tell geoserver to recalculate the bbox for a published layer
+    Needed for geogig layers to display properly in GeoSHAPE
+    Args:
+        datastore: Name of the datastore containing the target layer
+        layer_name: Name of the target layer
+    Returns:
+        HTTP response from PUT request
+    """
     if not getattr(settings, "SITEURL", None):
         return None
     url = "{}/geoserver/rest/workspaces/geonode/datastores/{}/featuretypes/{}?recalculate=nativebbox,latlonbbox".format(

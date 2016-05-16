@@ -147,6 +147,15 @@ def task_filter_assets(filter_name, after_time_added, run_once=False, run_time=N
 
 @shared_task(name="django_fulcrum.tasks.task_import_to_geogig")
 def task_import_to_geogig(form_id, layer_name, media_keys):
+    """
+    Task to chunk features by changeset and then import them to a geogig layer
+    Args:
+        form_id: Id of the fulcrum-form to which the features being imported belong
+        layer_name: The name of the layer to which the features belong
+        media_keys: The media key dict, needed
+    Returns:
+        No return
+    """
     published = is_geogig_layer_published(layer_name)
     for grouped_features in changeset_chunks(form_id, layer_name):
         if not published:
