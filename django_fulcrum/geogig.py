@@ -289,18 +289,17 @@ def import_from_pg(repo_name, table_name):
     subprocess.call(['/var/lib/geogig/bin/geogig', 'add'])
     cur = db_conn.cursor()
     cur.execute("SELECT count(*) FROM {};".format(table_name))
-    count = cur.rowcount
+    count = cur.fetchone()
+    cur.close()
     subprocess.call(
-            ['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis, added {} feature(s).'".format(table_name, count)])
+            ['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis, added {} feature(s).'".format(table_name, int(count[0]))])
     os.chdir(prev_dir)
 
 def import_from_geojson(repo_name,table_name, features):
     geojson = {"type": "FeatureCollection", "features": features}
-    print(geojson)
     file_dir = get_ogc_server().get('GEOGIG_DATASTORE_DIR')
     print("File dir: {}".format(file_dir))
     file_path = os.path.join(file_dir, "{}.geojson".format(table_name))
-    print(file_path)
     with open(file_path, 'w+') as file:
         file.write(json.dumps(geojson))
     repo_dir = os.path.join(get_ogc_server().get('GEOGIG_DATASTORE_DIR'), repo_name)
@@ -323,4 +322,4 @@ def recalculate_featuretype_extent(datastore, layer_name):
     ogc_server = get_ogc_server()
     auth = (ogc_server.get('USER'),
             ogc_server.get('PASSWORD'))
-    print requests.put(url, xml, auth=auth, headers=headers, verify=getattr(settings, "SSL_VERIFY", True))
+    return requests.put(url, xml, auth=auth, headers=headers, verify=getattr(settings, "SSL_VERIFY", True))

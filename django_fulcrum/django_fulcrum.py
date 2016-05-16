@@ -138,7 +138,6 @@ class DjangoFulcrum:
         for grouped_features in time_chunks(imported_features, time_field, 2):
             if not grouped_features:
                continue
-            print grouped_features
             filtered_features, filtered_feature_count = filter_features({"features": grouped_features})
             total_passed_features += filtered_feature_count
             uploads = []
@@ -218,15 +217,16 @@ class DjangoFulcrum:
                         published = True
                     # DROP DB TABLE HERE?
                     else:
+                        # Leading update instead of trailing because update and recalculate need to be separated
+                        update_geoshape_layers()
                         uploads = prepare_features_for_geoshape(uploads, media_map)
                         wfst = prepare_wfs_transaction(uploads, layer.layer_name)
                         post_wfs_transaction(wfst)
-                        recalculate_featuretype_extent(layer.layer_name, layer.layer_name)
-                    update_geoshape_layers()
-                    send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
+                    recalculate_featuretype_extent(layer.layer_name, layer.layer_name)
             with transaction.atomic():
                 layer.layer_date = int(latest_time)
                 layer.save()
+            send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
         # This is added again after the loop because if the loop finishes all points would have been processed,
         # however since some points may have been filtered we want their times to be included so as to not,
         # continually request them, but only after we are sure that we got all valid points where they need to be.
@@ -234,7 +234,8 @@ class DjangoFulcrum:
             layer.layer_date = int(latest_time)
             layer.save()
         if upload_to_geogig:
-
+            # Final layer update since loop contains a leading update instead of trailing
+            update_geoshape_layers()
         print("RESULTS\n---------------")
         print("Total Records Pulled: {}".format(pulled_record_count))
         print("Total Records Passed Filter: {}".format(total_passed_features))
