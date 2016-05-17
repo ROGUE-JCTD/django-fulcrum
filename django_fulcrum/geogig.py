@@ -39,7 +39,6 @@ def publish_geogig_layer(store_name, layer_name):
     Returns:
         None
     """
-
     ogc_server = get_ogc_server()
     url = "{}/rest".format(ogc_server.get('LOCATION').rstrip('/'))
     workspace_name = "geonode"
