@@ -159,22 +159,18 @@ class DjangoFulcrum:
                         if feature.get('properties').get(media_key):
                             for media_id in feature.get('properties').get(media_key):
                                 print("Getting asset :{}".format(media_id))
-                                try:
-                                    if self.get_asset(media_id, media_map.get(media_key)):
-                                        feature['properties']['{}_url'.format(media_key)] += [
-                                            self.get_asset(media_id, media_map.get(media_key))]
-                                        feature['properties']['{}'.format(media_key)] += [
-                                            self.get_asset(media_id, media_map.get(media_key))]
+                                asset = self.get_asset(media_id, media_map.get(media_key))
+                                if asset is not None:
+                                    if '{}_url'.format(media_key) in feature.get('properties'):
+                                        feature['properties']['{}_url'.format(media_key)] += [asset]
                                     else:
-                                        feature['properties']['{}'.format(media_key)] += []
-                                except KeyError:
-                                    if self.get_asset(media_id, media_map.get(media_key)):
-                                        feature['properties']['{}_url'.format(media_key)] = [
-                                            self.get_asset(media_id, media_map.get(media_key))]
-                                        feature['properties']['{}'.format(media_key)] = [
-                                            self.get_asset(media_id, media_map.get(media_key))]
-                                    else:
-                                        feature['properties']['{}'.format(media_key)] += []
+                                        feature['properties']['{}_url'.format(media_key)] = [asset]
+                            if '{}_url'.format(media_key) in feature.get('properties'):
+                                feature['properties']['{}'.format(media_key)] = feature['properties']['{}_url'.format(media_key)]
+                            else:
+                                feature['properties']['{}'.format(media_key)] = []
+
+
                     # IF BATCH RECORDS CONTAIN CHANGESET IDS 
                     # if feature.get('properties').get('changeset_id') and feature.get('properties').get('changeset_id') in changeset_dict:
                     #     changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
@@ -311,8 +307,7 @@ class DjangoFulcrum:
                                                                      element_map,
                                                                      media_map))
                 else:
-                    if record[key]:
-                        properties[key] = record[key]
+                    properties[key] = record[key]
             feature['properties'] = properties
             features += [feature]
         geojson = {"type": "FeatureCollection", "features": features}
@@ -372,20 +367,36 @@ class DjangoFulcrum:
             returns a dict of properties for use in a geojson structure.
         """
         properties = {}
-        for fv_key, fv_val in form_values.iteritems():
-            if not element_map.get(fv_key) in media_map:
-                properties[element_map.get(fv_key)] = fv_val
+        for em_key, em_val in element_map.iteritems():
+            if not form_values.get(em_key) and em_val not in media_map:
+                properties[em_val] = ""
+            elif not form_values.get(em_key):
+                properties[em_val] = []
             else:
-                if type(fv_val[0]) == str:
-                    properties[element_map.get(fv_key)] = fv_val
-                    continue
-                for asset_prop in fv_val:
-                    for asset_prop_key, asset_prop_val in asset_prop.iteritems():
-                        if 'id' in asset_prop_key:
-                            if asset_prop_val:
-                                properties[element_map.get(fv_key)] = [asset_prop_val]
-                                if asset_prop.get('caption'):
-                                    properties['{}_caption'.format(element_map.get(fv_key))] = [asset_prop_val]
+                if not element_map.get(em_key) in media_map:
+                    properties[element_map.get(em_key)] = form_values.get(em_key)
+                else:
+                    if type(form_values.get(em_key)[0]) == str:
+                        properties[element_map.get(em_key)] = form_values.get(em_key)
+                        continue
+                    for asset_prop in form_values.get(em_key):
+                        for asset_prop_key, asset_prop_val in asset_prop.iteritems():
+                            if 'id' in asset_prop_key:
+                                if not properties.get(element_map.get(em_key)):
+                                    properties[element_map.get(em_key)] = [asset_prop_val]
+                                else:
+                                    properties[element_map.get(em_key)] += [asset_prop_val]
+                            if 'caption' in asset_prop_key:
+                                if not properties.get('{}_caption'.format(element_map.get(em_key))):
+                                    if asset_prop_val:
+                                        properties['{}_caption'.format(element_map.get(em_key))] = [asset_prop_val]
+                                    else:
+                                        properties['{}_caption'.format(element_map.get(em_key))] = []
+                                else:
+                                    if asset_prop_val:
+                                        properties['{}_caption'.format(element_map.get(em_key))] += [asset_prop_val]
+                                    else:
+                                        properties['{}_caption'.format(element_map.get(em_key))] += []
         return properties
 
     def get_asset(self, asset_id, asset_type):
@@ -1253,6 +1264,9 @@ def prepare_features_for_geoshape(feature_data, media_keys=None):
         for prop in feature.get('properties'):
             if not prop:
                 continue
+            if prop.lower() == "name":
+                new_props['fulcrum_name'] = feature.get('properties').get(prop)
+                delete_prop += [prop]
             if not feature.get('properties').get(prop):
                 feature['properties'][prop] = ''
             for mmkey in maploom_media_keys:
@@ -1263,9 +1277,11 @@ def prepare_features_for_geoshape(feature_data, media_keys=None):
         for media_key, media_val in media_keys.iteritems():
             if ('{}_caption'.format(media_key)) in feature.get('properties'):
                 feature['properties']['caption_{}'.format(media_key)] = \
-                    feature['properties'].get('{}_caption'.format(media_key))
+                    ", ".join(feature['properties'].get('{}_caption'.format(media_key)))
                 try:
                     del feature['properties']['{}_caption'.format(media_key)]
+                    if feature.get('properties').get('prop_{}_caption'.format(media_key)):
+                        del feature['properties']['prop_{}_caption'.format(media_key)]
                 except KeyError:
                     pass
             try:

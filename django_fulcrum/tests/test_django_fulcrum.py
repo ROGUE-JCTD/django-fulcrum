@@ -380,6 +380,7 @@ class DjangoFulcrumTests(TestCase):
                 },
                 'type': 'Feature',
                 'properties': {
+                    "status": None,
                     'form_id': 'd82f38c2-4ecd-400a-a4cc-7c2c93427d1e',
                     'latitude': 18.5177634347377,
                     'created_at': '2016-01-21T15:18:28Z',
@@ -394,11 +395,19 @@ class DjangoFulcrumTests(TestCase):
                     'created_by_id': 'bbf56001-a5b0-40a6-9ae6-607771983c62',
                     'sounds': ['5dcd8385-d46c-4856-a689-6ce3ec8da8ed.m4a'],
                     'id': 'b5da0b90-d325-4299-b6cd-0d0baacc0c62',
-                    'name': 'Example'
+                    'vids_caption': [],
+                    'name': 'Example',
+                    "altitude": None,
+                    "speed": None,
+                    "course": None,
+                    "horizontal_accuracy": None,
+                    "vertical_accuracy": None,
+                    "project_id": None,
+                    "assigned_to": None,
+                    "assigned_to_id": None,
                 }
             }]
         }
-
         self.assertEqual(expected_geojson, returned_geojson)
 
     def test_prepare_features_for_geoshape(self):
@@ -432,7 +441,7 @@ class DjangoFulcrumTests(TestCase):
                 "coordinates": [125.6, 10.1]
             },
             "properties": {
-                "name": "Dinagat Islands",
+                "fulcrum_name": "Dinagat Islands",
                 "version": 1,
                 "fulcrum_id": "123",
                 "photos_image": '["test.jpg"]',
