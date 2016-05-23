@@ -124,7 +124,6 @@ class DjangoFulcrum:
 
         if not imported_features:
             return
-
         pulled_record_count = len(imported_features)
 
         date_field = 'updated_at'
@@ -135,7 +134,7 @@ class DjangoFulcrum:
 
         latest_time = imported_features[-1].get('properties').get(time_field)
         total_passed_features = 0
-        for grouped_features in time_chunks(imported_features, time_field, 2):
+        for grouped_features in chunks(imported_features, upload_to_geogig, time_field=time_field, time_delta=2):
             if not grouped_features:
                continue
             filtered_features, filtered_feature_count = filter_features({"features": grouped_features})
@@ -158,7 +157,7 @@ class DjangoFulcrum:
                     for media_key in media_map:
                         if feature.get('properties').get(media_key):
                             for media_id in feature.get('properties').get(media_key):
-                                print("Getting asset :{}".format(media_id))
+                                print("Getting asset: {}".format(media_id))
                                 asset = self.get_asset(media_id, media_map.get(media_key))
                                 if asset is not None:
                                     if '{}_url'.format(media_key) in feature.get('properties'):
@@ -210,7 +209,6 @@ class DjangoFulcrum:
                             database_alias = None
                         upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias)
                         import_to_geogig('fulcrum_geogig', layer.layer_name)
-                        published = True
                     # DROP DB TABLE HERE?
                     else:
                         # Leading update instead of trailing because update and recalculate need to be separated
@@ -232,6 +230,14 @@ class DjangoFulcrum:
         if upload_to_geogig:
             # Final layer update since loop contains a leading update instead of trailing
             update_geoshape_layers()
+        else:
+            try:
+                database_alias = 'fulcrum'
+                conn = connections[database_alias]
+            except:
+                conn = connection
+            datastore = conn.settings_dict.get('NAME')
+            recalculate_featuretype_extent(datastore, layer.layer_name)
         print("RESULTS\n---------------")
         print("Total Records Pulled: {}".format(pulled_record_count))
         print("Total Records Passed Filter: {}".format(total_passed_features))
@@ -557,40 +563,33 @@ def changeset_chunks(form_id, layer_name):
         yield get_features_by_changeset(None, layer_name)
 
 
-def time_chunks(a_list, time_field, time_delta):
+def chunks(a_list, upload_to_geogig, time_field=None, time_delta=2, chunk_size=100):
     """
     Args:
         a_list: A list of features
+        upload_to_geogig: Whether or not chunks will be based on time (simulated changesets) or an arbitrary number
         time_field: Name of the time field to sort by
         time_delta: Change in time (in seconds) to chunk by
+        chunk_size: Size for chunks if not using geogig
     Returns:
         A sublist of the features
     """
-    feature_index = 0
-    yield_list = []
-    while feature_index < len(a_list):
-        yield_list += [a_list[feature_index]]
-        current_time = a_list[feature_index]['properties'][time_field]
-        next_time = a_list[feature_index + 1]['properties'][time_field] if feature_index + 1 < len(a_list) else None
-        if next_time and next_time - current_time <= time_delta:
-            feature_index += 1
-        else:
-            yield yield_list
-            yield_list = []
-            feature_index += 1
-
-def chunks(a_list, chunk_size):
-    """
-
-    Args:
-        a_list: A list.
-        chunk_size: Size of each sub-list.
-
-    Returns:
-        A list of sub-lists.
-    """
-    for i in xrange(0, len(a_list), chunk_size):
-        yield a_list[i:i + chunk_size]
+    if upload_to_geogig and time_field:
+        feature_index = 0
+        yield_list = []
+        while feature_index < len(a_list):
+            yield_list += [a_list[feature_index]]
+            current_time = a_list[feature_index]['properties'][time_field]
+            next_time = a_list[feature_index + 1]['properties'][time_field] if feature_index + 1 < len(a_list) else None
+            if next_time and next_time - current_time <= time_delta:
+                feature_index += 1
+            else:
+                yield yield_list
+                yield_list = []
+                feature_index += 1
+    else:
+        for i in xrange(0, len(a_list), chunk_size):
+            yield a_list[i:i + chunk_size]
 
 
 def convert_to_epoch_time(date):

@@ -25,7 +25,6 @@ def import_to_geogig(repo_name, layer_name):
     import_from_pg(repo_name, layer_name)
     if created:
         set_geoserver_permissions(repo_dir)
-    if created:
         publish_geogig_layer(repo_name, layer_name)
         set_geoserver_permissions(repo_dir)
 
@@ -145,8 +144,8 @@ def set_geoserver_permissions(dir_path):
     """
     if not 'linux' in sys.platform:
         return
-    import pwd
-    import grp
+    # import pwd
+    # import grp
     if not os.path.exists(dir_path):
         return
     # uid = pwd.getpwnam("tomcat").pw_uid
@@ -156,7 +155,7 @@ def set_geoserver_permissions(dir_path):
         for root, dirs, files in os.walk(dir_path):
             for directory in dirs:
                 os.chmod(os.path.join(root, directory), 0775)
-                # os.chmod(os.path.join(root, directory), uid, gid)
+                # os.chown(os.path.join(root, directory), uid, gid)
             for file_path in files:
                 os.chmod(os.path.join(root, file_path), 0775)
                 # os.chown(os.path.join(root, file_path), uid, gid)
@@ -304,7 +303,11 @@ def prepare_wfs_transaction(features_dict, layer):
         coordinates.text = "{},{}".format(coords[1], coords[0])
         for prop in feature_dict.get('properties'):
             feature_element = ET.SubElement(feature, ET.QName(ns_map.get('feature'), prop))
-            feature_element.text = str(feature_dict.get('properties').get(prop))
+            try:
+                feature_element.text = str(feature_dict.get('properties').get(prop))
+            except UnicodeEncodeError:
+                print("Unable to encode feature property")
+                #feature_element.text = feature_dict.get('properties').get(prop)
     return ET.tostring(transaction, xml_declaration=True, encoding="UTF-8")
 
 

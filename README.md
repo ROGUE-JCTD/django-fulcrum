@@ -30,7 +30,7 @@ There are two different types of installation instructions.  A set of instructio
 
 ### geoshape-vagrant setup
 
-In an elevated session (sudo or "run as administrator),
+In an elevated session (sudo or "run as administrator"),
 change directories to the geoshape-vagrant repo, and install the vagrant hosts updater
 ```
 vagrant plugin install vagrant-hostsupdater
