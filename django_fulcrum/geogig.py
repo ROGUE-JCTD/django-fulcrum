@@ -142,23 +142,17 @@ def set_geoserver_permissions(dir_path):
     Returns:
         Nothing
     """
-    if not 'linux' in sys.platform:
+    if 'linux' not in sys.platform:
         return
-    # import pwd
-    # import grp
     if not os.path.exists(dir_path):
         return
-    # uid = pwd.getpwnam("tomcat").pw_uid
-    # gid = grp.getgrnam("geoservice").gr_gid
     try:
         os.chmod(dir_path, 0775)
         for root, dirs, files in os.walk(dir_path):
             for directory in dirs:
                 os.chmod(os.path.join(root, directory), 0775)
-                # os.chown(os.path.join(root, directory), uid, gid)
             for file_path in files:
                 os.chmod(os.path.join(root, file_path), 0775)
-                # os.chown(os.path.join(root, file_path), uid, gid)
     except OSError as e:
         print("Could not change permissions for all repo files.")
         print("The error is {}".format(e.message))
@@ -186,11 +180,10 @@ def delete_geogig_repo(repo_name):
         os.remove(repo_dir)
 
 
-def get_geogig_repo_name(repo):
-    url = '{}'.format(get_geogig_base_url(), str(id))
-    response = requests.get(url,
-                            verify=False)
-    pass
+# def get_geogig_repo_name(repo):
+#     url = '{}'.format(get_geogig_base_url(), str(id))
+#     requests.get(url, verify=False)
+#     pass
 
 
 def get_all_geogig_repos():
@@ -285,10 +278,11 @@ def prepare_wfs_transaction(features_dict, layer):
               "feature": "http://www.geonode.org/",
               "ogc": "http://www.opengis.net/ogc"}
 
-    transactionName = ET.QName("http://www.opengis.net/wfs", 'Transaction')
-    transaction = ET.Element(transactionName, nsmap=ns_map)
+    transaction_name = ET.QName("http://www.opengis.net/wfs", 'Transaction')
+    transaction = ET.Element(transaction_name, nsmap=ns_map)
     insert = ET.SubElement(transaction, ET.QName(ns_map.get('wfs'), "Insert"),
-                           attrib={'idgen':'UseExisting', 'handle': 'Added {} feature(s) via django-fulcrum'.format(len(features_dict))})
+                           attrib={'idgen': 'UseExisting', 'handle': 'Added {} feature(s) via django-fulcrum'
+                           .format(len(features_dict))})
 
     for feature_dict in features_dict:
         fulcrum_id = feature_dict.get('properties').get('fulcrum_id')
@@ -306,8 +300,10 @@ def prepare_wfs_transaction(features_dict, layer):
             try:
                 feature_element.text = str(feature_dict.get('properties').get(prop))
             except UnicodeEncodeError:
-                print("Unable to encode feature property")
-                #feature_element.text = feature_dict.get('properties').get(prop)
+                feature_element.text = feature_dict.get('properties').get(prop)
+            except Exception as e:
+                print "Unable to get property value"
+                print(e)
     return ET.tostring(transaction, xml_declaration=True, encoding="UTF-8")
 
 
@@ -361,10 +357,12 @@ def import_from_pg(repo_name, table_name):
     count = cur.fetchone()
     cur.close()
     subprocess.call(
-            ['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis, added {} feature(s).'".format(table_name, int(count[0]))])
+            ['/var/lib/geogig/bin/geogig', 'commit', '-m', "'Imported table {} from postgis, added {} feature(s).'"
+                .format(table_name, int(count[0]))])
     os.chdir(prev_dir)
 
-def import_from_geojson(repo_name,table_name, features):
+
+def import_from_geojson(repo_name, table_name, features):
     """
     Import a geojson into a unpublished geogig repo
     Args:

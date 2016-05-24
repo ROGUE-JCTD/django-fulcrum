@@ -16,7 +16,6 @@
 # Copyright (c) 1999, Frank Warmerdam
 
 from fulcrum import Fulcrum
-from fulcrum.exceptions import NotFoundException
 from dateutil import parser
 from django.core.files.temp import NamedTemporaryFile
 import requests
@@ -111,7 +110,7 @@ class DjangoFulcrum:
         element_map = self.get_element_map(form)
         media_map = self.get_media_map(form, element_map)
         layer = Layer.objects.get(layer_uid=form.get('id'))
-        #changeset_dict = get_changeset_models()
+        # changeset_dict = get_changeset_models()
         upload_to_geogig = getattr(settings, "UPLOAD_TO_GEOGIG", False)
         if layer:
             records = self.get_latest_records(layer)
@@ -136,7 +135,7 @@ class DjangoFulcrum:
         total_passed_features = 0
         for grouped_features in chunks(imported_features, upload_to_geogig, time_field=time_field, time_delta=2):
             if not grouped_features:
-               continue
+                continue
             filtered_features, filtered_feature_count = filter_features({"features": grouped_features})
             total_passed_features += filtered_feature_count
             uploads = []
@@ -165,13 +164,14 @@ class DjangoFulcrum:
                                     else:
                                         feature['properties']['{}_url'.format(media_key)] = [asset]
                             if '{}_url'.format(media_key) in feature.get('properties'):
-                                feature['properties']['{}'.format(media_key)] = feature['properties']['{}_url'.format(media_key)]
+                                feature['properties']['{}'.format(media_key)] =\
+                                    feature['properties']['{}_url'.format(media_key)]
                             else:
                                 feature['properties']['{}'.format(media_key)] = []
 
-
                     # IF BATCH RECORDS CONTAIN CHANGESET IDS 
-                    # if feature.get('properties').get('changeset_id') and feature.get('properties').get('changeset_id') in changeset_dict:
+                    # if feature.get('properties').get('changeset_id') and
+                    # feature.get('properties').get('changeset_id') in changeset_dict:
                     #     changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
                     # else:
                     #     changeset_id = None
@@ -185,8 +185,7 @@ class DjangoFulcrum:
                     write_feature(feature.get('properties').get('fulcrum_id'),
                                   feature.get('properties').get('version'),
                                   layer,
-                                  feature)
-                                  #changeset_id)
+                                  feature)  # changeset_id)
                     uploads += [feature]
             if uploads:
                 try:
@@ -202,11 +201,6 @@ class DjangoFulcrum:
                 else:
                     published = is_geogig_layer_published(layer.layer_name)
                     if not published:
-                        try:
-                            database_alias = 'fulcrum'
-                            connections[database_alias]
-                        except ConnectionDoesNotExist:
-                            database_alias = None
                         upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias)
                         import_to_geogig('fulcrum_geogig', layer.layer_name)
                     # DROP DB TABLE HERE?
@@ -234,7 +228,7 @@ class DjangoFulcrum:
             try:
                 database_alias = 'fulcrum'
                 conn = connections[database_alias]
-            except:
+            except ConnectionDoesNotExist:
                 conn = connection
             datastore = conn.settings_dict.get('NAME')
             recalculate_featuretype_extent(datastore, layer.layer_name)
@@ -257,7 +251,7 @@ class DjangoFulcrum:
             return
 
         records = []
-        if layer.layer_date:
+        if layer.layer_date and layer.layer_date != 0:
             url_params = {'form_id': layer.layer_uid, 'updated_since': layer.layer_date + 1}
         else:
             url_params = {'form_id': layer.layer_uid}
@@ -284,7 +278,7 @@ class DjangoFulcrum:
             if created:
                 print("The layer {}({}) was created.".format(layer.layer_name, layer.layer_uid))
             print("Getting records for {}".format(layer.layer_name))
-            #self.write_changesets_from_fulcrum(form.get('id'))
+            # self.write_changesets_from_fulcrum(form.get('id'))
             self.update_records(form)
 
     def convert_to_geojson(self, records, element_map, media_map):
@@ -427,6 +421,7 @@ def write_changesets_from_file(changeset_filepath, filename=""):
         Function to get all changesets which correspond to a layer and write them to db
     Args:
         changeset_filepath: file path of the exported fulcrum changeset file\
+        filename: name of the file
     Returns:
         No return, just creates changeset objects
     """
@@ -459,27 +454,24 @@ def write_changesets_to_db(changesets_list, form_id, geojson=False):
         created_at = parser.parse(changeset.get('created_at'))
         updated_at = parser.parse(changeset.get('updated_at'))
         if geojson:
-            id = changeset.get('fulcrum_id')
+            uid = changeset.get('fulcrum_id')
             comment = changeset.get('comment')
         else:
-            id = changeset.get('id')
+            uid = changeset.get('id')
             if changeset.get('metadata').get('comment'):
                 comment = changeset.get('metadata').get('comment')
             else:
                 comment = ""
-        ojb, created = Changesets.objects.get_or_create(changeset_uid=id,
-                                                changeset_form_id=form_id,
-                                                changeset_created_at=created_at,
-                                                changeset_updated_at=updated_at,
-                                                changeset_number_of_changes=change_count,
-                                                changeset_comment=comment)
+        Changesets.objects.get_or_create(changeset_uid=uid, changeset_form_id=form_id, changeset_created_at=created_at,
+                                         changeset_updated_at=updated_at, changeset_number_of_changes=change_count,
+                                         changeset_comment=comment)
 
 
 def get_changeset_models():
     """
         Function to get all the changesets stored in db and return them as dict
     Args:
-        None
+        No args
     Returns:
         A dict containing keys of changeset ids and values of changeset model objects
     """
@@ -558,7 +550,8 @@ def changeset_chunks(form_id, layer_name):
                 continue
             print("Processing changeset {} of {}...".format(changeset.changeset_uid, len(features)))
             yield features
-    features_without_changeset = Feature.objects.filter(feature_changeset=None, layer=Layer.objects.get(layer_name=layer_name))
+    features_without_changeset = Feature.objects.filter(feature_changeset=None,
+                                                        layer=Layer.objects.get(layer_name=layer_name))
     if features_without_changeset.exists():
         yield get_features_by_changeset(None, layer_name)
 
@@ -752,7 +745,6 @@ def upload_geojson(file_path=None, geojson=None):
     upload_to_geogig = getattr(settings, "UPLOAD_TO_GEOGIG", False)
     file_basename = os.path.splitext(os.path.basename(file_path))[0]
     layer, created = write_layer(name=file_basename)
-    layer_name = layer.layer_name
     media_keys = get_update_layer_media_keys(media_keys=find_media_keys(features), layer=layer)
     field_map = get_field_map(features)
     # changeset_dict = get_changeset_models()
@@ -799,25 +791,25 @@ def upload_geojson(file_path=None, geojson=None):
 
         key_name = 'fulcrum_id'
         # USED IF COMMITING BY CHANGESET
-        # if feature.get('properties').get('changeset_id') and feature.get('properties').get('changeset_id') in changeset_dict:
+        # if feature.get('properties').get('changeset_id') and
+        # feature.get('properties').get('changeset_id') in changeset_dict:
         #     changeset_id = changeset_dict.get(feature.get('properties').get('changeset_id'))
         # else:
         #     changeset_id = None
         write_feature(feature.get('properties').get(key_name),
                       feature.get('properties').get('version'),
                       layer,
-                      feature)
-                      #changeset_id)
+                      feature)  # changeset_id)
         uploads += [feature]
         count += 1
 
     try:
         database_alias = 'fulcrum'
+        connections[database_alias]
     except ConnectionDoesNotExist:
         database_alias = None
 
     table_name = layer.layer_name
-
 
     if not upload_to_geogig:
         if upload_to_db(uploads, table_name, media_keys, database_alias=database_alias):
@@ -826,14 +818,8 @@ def upload_geojson(file_path=None, geojson=None):
     else:
         published = is_geogig_layer_published(layer.layer_name)
         if not published:
-            try:
-                database_alias = 'fulcrum'
-                connections[database_alias]
-            except ConnectionDoesNotExist:
-                database_alias = None
             upload_to_db(uploads, layer.layer_name, media_keys, database_alias=database_alias)
             import_to_geogig('fulcrum_geogig', layer.layer_name)
-            published = True
         # DROP DB TABLE HERE?
         else:
             uploads = prepare_features_for_geoshape(uploads, media_keys)
@@ -919,7 +905,7 @@ def write_layer(name, layer_id='', date=0, media_keys=None):
             return layer, False
 
 
-def write_feature(key, version, layer, feature_data):# feature_changeset):
+def write_feature(key, version, layer, feature_data):  # feature_changeset):
     """
 
     Args:
@@ -935,7 +921,7 @@ def write_feature(key, version, layer, feature_data):# feature_changeset):
     with transaction.atomic():
         feature, feature_created = Feature.objects.get_or_create(feature_uid=key,
                                                                  feature_version=version,
-                                                                 #feature_changeset=feature_changeset,
+                                                                 # feature_changeset=feature_changeset,
                                                                  defaults={'layer': layer,
                                                                            'feature_data': json.dumps(feature_data)})
         return feature
