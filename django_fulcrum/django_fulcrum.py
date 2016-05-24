@@ -272,7 +272,16 @@ class DjangoFulcrum:
             records += imported_features.get('records')
         return records
 
-    def request_records_history(self, url_params, record_id = None):
+    def request_records_history(self, url_params, record_id=None):
+        """
+
+        Args:
+            url_params: Parameters for the record request (not all are available for this request).
+            record_id: Used if only requesting a specific id.
+
+        Returns:
+
+        """
         if record_id:
             return self.fulcrum.records.history(id=id)
         else:
