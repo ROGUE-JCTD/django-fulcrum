@@ -51,7 +51,7 @@ class DjangoFulcrum:
         Returns: The FulcrumImporter Object.
         """
         self.fulcrum_api_key = fulcrum_api_key
-        self.conn = self.get_fulcrum_connection(fulcrum_api_key)
+        self.fulcrum = self.get_fulcrum_connection(fulcrum_api_key)
 
     @staticmethod
     def get_fulcrum_connection(fulcrum_api_key=None):
@@ -65,7 +65,7 @@ class DjangoFulcrum:
 
     def get_forms(self):
         """A wrapper for getting Fulcrum froms from the API"""
-        return self.conn.forms.find('').get('forms')
+        return self.fulcrum.forms.find('').get('forms')
 
     def write_changesets_from_fulcrum(self, form_id):
         """
@@ -77,11 +77,11 @@ class DjangoFulcrum:
         """
         changesets_list = []
         url_params = {'form_id': form_id}
-        changesets = self.conn.changesets.search(url_params=url_params)
+        changesets = self.fulcrum.changesets.search(url_params=url_params)
         changesets_list += changesets.get('changesets')
         while changesets.get('current_page') < changesets.get('total_pages'):
             url_params['page'] = changesets.get('current_page') + 1
-            changesets = self.conn.changesets.search(url_params=url_params)
+            changesets = self.fulcrum.changesets.search(url_params=url_params)
             changesets_list += changesets.get('changesets')
         write_changesets_to_db(changesets_list=changesets_list, form_id=form_id, geojson=False)
 
@@ -203,7 +203,6 @@ class DjangoFulcrum:
                     if not published:
                         upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias)
                         import_to_geogig('fulcrum_geogig', layer.layer_name)
-                    # DROP DB TABLE HERE?
                     else:
                         # Leading update instead of trailing because update and recalculate need to be separated
                         update_geoshape_layers()
@@ -215,12 +214,7 @@ class DjangoFulcrum:
                 layer.layer_date = int(latest_time)
                 layer.save()
             send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
-        # This is added again after the loop because if the loop finishes all points would have been processed,
-        # however since some points may have been filtered we want their times to be included so as to not,
-        # continually request them, but only after we are sure that we got all valid points where they need to be.
-        with transaction.atomic():
-            layer.layer_date = int(latest_time)
-            layer.save()
+
         if upload_to_geogig:
             # Final layer update since loop contains a leading update instead of trailing
             update_geoshape_layers()
@@ -232,6 +226,14 @@ class DjangoFulcrum:
                 conn = connection
             datastore = conn.settings_dict.get('NAME')
             recalculate_featuretype_extent(datastore, layer.layer_name)
+
+        # This is added again after the loop because if the loop finishes all points would have been processed,
+        # however since some points may have been filtered we want their times to be included so as to not,
+        # continually request them, but only after we are sure that we got all valid points where they need to be.
+        with transaction.atomic():
+            layer.layer_date = int(latest_time)
+            layer.save()
+
         print("RESULTS\n---------------")
         print("Total Records Pulled: {}".format(pulled_record_count))
         print("Total Records Passed Filter: {}".format(total_passed_features))
@@ -255,7 +257,7 @@ class DjangoFulcrum:
             url_params = {'form_id': layer.layer_uid, 'updated_since': layer.layer_date + 1}
         else:
             url_params = {'form_id': layer.layer_uid}
-        imported_features = self.conn.records.search(url_params=url_params)
+        imported_features = self.request_records_history(url_params=url_params)
         if imported_features.get('current_page') <= imported_features.get('total_pages'):
             print("Received {} page {} of {}".format(layer.layer_name,
                                                      imported_features.get('current_page'),
@@ -263,13 +265,20 @@ class DjangoFulcrum:
         records += imported_features.get('records')
         while imported_features.get('current_page') < imported_features.get('total_pages'):
             url_params['page'] = imported_features.get('current_page') + 1
-            imported_features = self.conn.records.search(url_params=url_params)
+            imported_features = self.fulcrum.records.search(url_params=url_params)
             print("Received {} page {} of {}".format(layer.layer_name,
                                                      imported_features.get('current_page'),
                                                      imported_features.get('total_pages')))
             records += imported_features.get('records')
-
         return records
+
+    def request_records_history(self, url_params, record_id = None):
+        if record_id:
+            return self.fulcrum.records.history(id=id)
+        else:
+            return self.fulcrum.records.call('get',
+                                             '{0}/history.json'.format(self.fulcrum.records.path),
+                                             url_params=url_params)
 
     def update_all_layers(self):
         """Gets all forms and tries to update the records."""
@@ -420,8 +429,8 @@ def write_changesets_from_file(changeset_filepath, filename=""):
     """
         Function to get all changesets which correspond to a layer and write them to db
     Args:
-        changeset_filepath: file path of the exported fulcrum changeset file\
-        filename: name of the file
+        changeset_filepath: file path of the exported fulcrum changeset file
+        filename: The name of the changeset file
     Returns:
         No return, just creates changeset objects
     """
@@ -1392,35 +1401,6 @@ def ogr2ogr_geojson_to_db(geojson_file, database_alias=None, table=None):
         options = ['-update', '-append']
     else:
         return True
-
-    execute_append = ['',
-                      '-f', db_format,
-                      '-skipfailures',
-                      dest,
-                      '{}'.format(geojson_file),
-                      '-nln', table] + options
-    try:
-        ogr2ogr.main(execute_append)
-        return True
-    except Exception as e:
-        print str(e)
-    return False
-
-
-def ogr2ogr_geojson_to_wfs(geojson_file, url=None, layer=None):
-    """Uses an ogr2ogr script to upload a geojson file.
-
-    Args:
-        geojson_file: A geojson file.
-        url: The location of the url.
-        layer: The layer name to update.
-
-    Returns:
-        True if the file is succesfully uploaded.
-    """
-
-    if not geojson_file or not url or not layer:
-        return False
 
     execute_append = ['',
                       '-f', db_format,
