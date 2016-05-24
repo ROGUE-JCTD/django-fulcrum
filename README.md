@@ -135,9 +135,10 @@ Example:
 ```
 
 #### UPLOAD_TO_GEOGIG: (Optional)
-Determines if data will be uploaded to a Geogig repo. This should only be set to True if you are using Geoshape with a Geogig repo.
-By default this will be set to false.
-Example: `UPLOAD_TO_GEOGIG = True`
+Determines if data will be stored in a Geogig repo.
+This should only be set to True if you are using Geoshape with a Geogig repo.
+If you are not using Geoshape with a Geogig repo, leave the default value of False and data will be stored in PostGIS. 
+Example: `UPLOAD_TO_GEOGIG = False`
 
 #### FULCRUM_API_KEYS: (Optional)
 The API key which allows the application access to the data in your Fulcrum account.

@@ -838,13 +838,11 @@ def upload_geojson(file_path=None, geojson=None):
         if not published:
             upload_to_db(uploads, layer.layer_name, media_keys, database_alias=database_alias)
             import_to_geogig('fulcrum_geogig', layer.layer_name)
-        # DROP DB TABLE HERE?
         else:
             uploads = prepare_features_for_geoshape(uploads, media_keys)
             wfst = prepare_wfs_transaction(uploads, layer.layer_name)
             print(wfst)
             post_wfs_transaction(wfst)
-            recalculate_featuretype_extent(layer.layer_name, layer.layer_name)
         update_geoshape_layers()
         send_task('django_fulcrum.tasks.task_update_tiles', (layer.layer_name,))
     return True
