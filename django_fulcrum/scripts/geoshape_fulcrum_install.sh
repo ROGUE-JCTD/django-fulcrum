@@ -1,43 +1,62 @@
-#!/bin/bash
+# --!/bin/bash
+# exit on any error
+set -e
 
 #install django_fulcrum
-#add to /var/lib/geonode/rogue_geonode/geoshape/settings.py: 
-cd ~
-yum install unzip -y
-wget -O master.zip https://github.com/ROGUE-JCTD/django-fulcrum/archive/master.zip
-unzip master.zip
-mv -f django-fulcrum-master/django_fulcrum /var/lib/geonode/lib/python2.7/site-packages/
-chown geoshape:geoservice -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
-chmod 755 -R /var/lib/geonode/lib/python2.7/site-packages/django_fulcrum
-rm -rf master.zip
-rm -rf master
+#add to  /opt/boundless/exchange/settings.py:
 
-mkdir /var/lib/geonode/fulcrum_data
-chown geoshape:geoservice /var/lib/geonode/fulcrum_data
+EXCHANGE_SETTINGS=/opt/boundless/exchange/bex/settings.py
+EXCHANGE_LOCAL_SETTINGS=/opt/boundless/exchange/bex/settings.py
+FILE_SERVICE_STORE=/opt/geonode/geoserver_data/file-service-store
+FULCRUM_STORE=/opt/geonode/geoserver_data/fulcrum_data
+EXCHANGE_URLS=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/exchange/urls.py
+EXCHANGE_CELERY_APP=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/exchange/celery_app.py
+PIP=/opt/boundless/exchange/.venv/bin/pip
+GEONODE_LAYERS_MODELS=/opt/boundless/exchange//.venv/lib/python2.7/site-packages/geonode/layers/models.py
+
+
+# if django-fulcrum is not mounted from host, clone from github
+#yum install git -y
+#cd /
+#git clone https://github.com/ROGUE-JCTD/django-fulcrum.git
+
+# assuming the /django-fulcrum has been mounted to point to host's folder
+source /opt/boundless/exchange/.venv/bin/activate
+cd /django-fulcrum
+pip install -e .
+
+
+cd ~
+mkdir -p ${FULCRUM_STORE}
+chown exchange:geoservice ${FULCRUM_STORE}
+
 yum install memcached -y
 service memcached start
 chkconfig memcached on
 
 # /var/lib/geonode/bin/pip install django_fulcrum
-/var/lib/geonode/bin/pip install fulcrum
-/var/lib/geonode/bin/pip install python-memcached
-/var/lib/geonode/bin/pip install boto3
-/var/lib/geonode/bin/pip install Pillow
-grep -qF "INSTALLED_APPS += ('django_fulcrum',)" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "INSTALLED_APPS += ('django_fulcrum',)" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
+#${PIP} install fulcrum
+#${PIP} install python-memcached
+#${PIP} install boto3
+#${PIP} install Pillow
+grep -qF "INSTALLED_APPS += ('django_fulcrum',)"  ${EXCHANGE_SETTINGS} || echo "INSTALLED_APPS += ('django_fulcrum',)" >>  ${EXCHANGE_SETTINGS}
+
+
 
 # change permissions to file_service folder so that django_fulcrum can add data to the folder.
-chown tomcat:geoservice /var/lib/geoserver_data/file-service-store
-chmod 775 /var/lib/geoserver_data/file-service-store
+mkdir -p ${FILE_SERVICE_STORE}
+chown exchange:geoservice ${FILE_SERVICE_STORE}
+chmod 775 ${FILE_SERVICE_STORE}
 
-grep -q '^CELERY_ACCEPT_CONTENT' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^CELERY_ACCEPT_CONTENT.*/CELERY_ACCEPT_CONTENT=['json']/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "CELERY_ACCEPT_CONTENT=['json']" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q '^CELERY_TASK_SERIALIZER' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^CELERY_TASK_SERIALIZER.*/CELERY_TASK_SERIALIZER='json'/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "CELERY_TASK_SERIALIZER='json'" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q '^CELERY_RESULT_SERIALIZER' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^CELERY_RESULT_SERIALIZER.*/CELERY_RESULT_SERIALIZER='json'/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "CELERY_RESULT_SERIALIZER='json'" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q '^CELERY_SEND_EVENTS' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^CELERY_SEND_EVENTS.*/CELERY_SEND_EVENTS=True/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "CELERY_SEND_EVENTS=True" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q '^CELERYBEAT_USER' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^CELERYBEAT_USER.*/CELERYBEAT_USER='geoshape'/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "CELERYBEAT_USER='geoshape'" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q '^CELERYBEAT_GROUP' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^CELERYBEAT_GROUP.*/CELERYBEAT_GROUP='geoservice'/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "CELERYBEAT_GROUP='geoservice'" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q '^CELERYBEAT_SCHEDULER' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^CELERYBEAT_SCHEDULER.*/CELERYBEAT_SCHEDULER='djcelery\.schedulers\.DatabaseScheduler'/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "CELERYBEAT_SCHEDULER='djcelery.schedulers.DatabaseScheduler'" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q "from datetime import timedelta" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "from datetime import timedelta" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q "^CELERYBEAT_SCHEDULE =" /var/lib/geonode/rogue_geonode/geoshape/settings.py ||
+grep -q '^CELERY_ACCEPT_CONTENT'  ${EXCHANGE_SETTINGS} && sed -i "s/^CELERY_ACCEPT_CONTENT.*/CELERY_ACCEPT_CONTENT=['json']/"  ${EXCHANGE_SETTINGS} || echo "CELERY_ACCEPT_CONTENT=['json']" >>  ${EXCHANGE_SETTINGS}
+grep -q '^CELERY_TASK_SERIALIZER'  ${EXCHANGE_SETTINGS} && sed -i "s/^CELERY_TASK_SERIALIZER.*/CELERY_TASK_SERIALIZER='json'/"  ${EXCHANGE_SETTINGS} || echo "CELERY_TASK_SERIALIZER='json'" >>  ${EXCHANGE_SETTINGS}
+grep -q '^CELERY_RESULT_SERIALIZER'  ${EXCHANGE_SETTINGS} && sed -i "s/^CELERY_RESULT_SERIALIZER.*/CELERY_RESULT_SERIALIZER='json'/"  ${EXCHANGE_SETTINGS} || echo "CELERY_RESULT_SERIALIZER='json'" >>  ${EXCHANGE_SETTINGS}
+grep -q '^CELERY_SEND_EVENTS'  ${EXCHANGE_SETTINGS} && sed -i "s/^CELERY_SEND_EVENTS.*/CELERY_SEND_EVENTS=True/"  ${EXCHANGE_SETTINGS} || echo "CELERY_SEND_EVENTS=True" >>  ${EXCHANGE_SETTINGS}
+grep -q '^CELERYBEAT_USER'  ${EXCHANGE_SETTINGS} && sed -i "s/^CELERYBEAT_USER.*/CELERYBEAT_USER='exchange'/"  ${EXCHANGE_SETTINGS} || echo "CELERYBEAT_USER='exchange'" >>  ${EXCHANGE_SETTINGS}
+grep -q '^CELERYBEAT_GROUP'  ${EXCHANGE_SETTINGS} && sed -i "s/^CELERYBEAT_GROUP.*/CELERYBEAT_GROUP='geoservice'/"  ${EXCHANGE_SETTINGS} || echo "CELERYBEAT_GROUP='geoservice'" >>  ${EXCHANGE_SETTINGS}
+grep -q '^CELERYBEAT_SCHEDULER'  ${EXCHANGE_SETTINGS} && sed -i "s/^CELERYBEAT_SCHEDULER.*/CELERYBEAT_SCHEDULER='djcelery\.schedulers\.DatabaseScheduler'/"  ${EXCHANGE_SETTINGS} || echo "CELERYBEAT_SCHEDULER='djcelery.schedulers.DatabaseScheduler'" >>  ${EXCHANGE_SETTINGS}
+grep -q "from datetime import timedelta"  ${EXCHANGE_SETTINGS} || echo "from datetime import timedelta" >>  ${EXCHANGE_SETTINGS}
+grep -q "^CELERYBEAT_SCHEDULE ="  ${EXCHANGE_SETTINGS} ||
 printf "CELERYBEAT_SCHEDULE = {\n\
     'Update_layers_30_secs': {\n\
         'task': 'django_fulcrum.tasks.task_update_layers',\n\
@@ -49,29 +68,29 @@ printf "CELERYBEAT_SCHEDULE = {\n\
         'schedule': timedelta(seconds=120),\n\
         'args': None\n\
     },\n\
-\n}\n" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q '^USE_TZ' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^USE_TZ.*/USE_TZ = False/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "USE_TZ = False" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q '^TIME_ZONE' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^TIME_ZONE.*/TIME_ZONE = None/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "TIME_ZONE = None" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
-grep -q "^CACHES =" /var/lib/geonode/rogue_geonode/geoshape/settings.py ||
+\n}\n" >>  ${EXCHANGE_SETTINGS}
+grep -q '^USE_TZ'  ${EXCHANGE_SETTINGS} && sed -i "s/^USE_TZ.*/USE_TZ = False/"  ${EXCHANGE_SETTINGS} || echo "USE_TZ = False" >>  ${EXCHANGE_SETTINGS}
+grep -q '^TIME_ZONE'  ${EXCHANGE_SETTINGS} && sed -i "s/^TIME_ZONE.*/TIME_ZONE = None/"  ${EXCHANGE_SETTINGS} || echo "TIME_ZONE = None" >>  ${EXCHANGE_SETTINGS}
+grep -q "^CACHES ="  ${EXCHANGE_SETTINGS} ||
 printf "CACHES = {\n\
      'default': {\n\
          'BACKEND':\n\
          'django.core.cache.backends.memcached.MemcachedCache',\n\
          'LOCATION': '127.0.0.1:11211',\n\
      }\n\
-}\n" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
+}\n" >>  ${EXCHANGE_SETTINGS}
 
-grep -q '^SSL_VERIFY' /var/lib/geonode/rogue_geonode/geoshape/settings.py && sed -i "s/^SSL_VERIFY.*/SSL_VERIFY = False/" /var/lib/geonode/rogue_geonode/geoshape/settings.py || echo "SSL_VERIFY = False" >> /var/lib/geonode/rogue_geonode/geoshape/settings.py
+grep -q '^SSL_VERIFY'  ${EXCHANGE_SETTINGS} && sed -i "s/^SSL_VERIFY.*/SSL_VERIFY = False/"  ${EXCHANGE_SETTINGS} || echo "SSL_VERIFY = False" >>  ${EXCHANGE_SETTINGS}
 
-#add to /var/lib/geonode/rogue_geonode/geoshape/local_settings.py:
+#add to ${EXCHANGE_LOCAL_SETTINGS}:
 
-grep -q "^FULCRUM_UPLOAD =" /var/lib/geonode/rogue_geonode/geoshape/local_settings.py ||
-echo "FULCRUM_UPLOAD = '/var/lib/geonode/fulcrum_data'" >> /var/lib/geonode/rogue_geonode/geoshape/local_settings.py
+grep -q "^FULCRUM_UPLOAD =" ${EXCHANGE_LOCAL_SETTINGS} ||
+echo "FULCRUM_UPLOAD = '"${FULCRUM_STORE}"'" >> ${EXCHANGE_LOCAL_SETTINGS}
 
-grep -q "^DATABASES['fulcrum'] =" /var/lib/geonode/rogue_geonode/geoshape/local_settings.py ||
-echo "DATABASES['fulcrum'] = DATABASES['geoshape_imports']" >> /var/lib/geonode/rogue_geonode/geoshape/local_settings.py
+grep -q "^DATABASES['fulcrum'] =" ${EXCHANGE_LOCAL_SETTINGS} ||
+echo "DATABASES['fulcrum'] = DATABASES['exchange_imports']" >> ${EXCHANGE_LOCAL_SETTINGS}
 
-grep -q "^S3_CREDENTIALS =" /var/lib/geonode/rogue_geonode/geoshape/local_settings.py ||
+grep -q "^S3_CREDENTIALS =" ${EXCHANGE_LOCAL_SETTINGS} ||
 printf "# S3_CREDENTIALS = [{'s3_bucket': ['xxxxx'],\n\
         #           's3_key': 'xxxxx',\n\
         #           's3_secret': 'xxxxx',\n\
@@ -79,7 +98,7 @@ printf "# S3_CREDENTIALS = [{'s3_bucket': ['xxxxx'],\n\
         #           {'s3_bucket': ['xxxxx'],\n\
         #           's3_key': 'xxxxx',\n\
         #           's3_secret': 'xxxxx',\n\
-        #           's3_gpg': 'xxxxx'}]\n">> /var/lib/geonode/rogue_geonode/geoshape/local_settings.py
+        #           's3_gpg': 'xxxxx'}]\n">> ${EXCHANGE_LOCAL_SETTINGS}
 
 function getFulcrumApiKey() {
 	echo "Enter Fulcrum Username:"
@@ -98,28 +117,28 @@ function getFulcrumApiKey() {
         fi
 
 	## if the token isn't found, it will just print blanks anyway
-	echo "FULCRUM_API_KEYS=['$apiToken']" >> /var/lib/geonode/rogue_geonode/geoshape/local_settings.py
+	echo "FULCRUM_API_KEYS=['"${apiToken}"']" >> ${EXCHANGE_LOCAL_SETTINGS}
 }
-grep -q '^FULCRUM_API_KEYS' /var/lib/geonode/rogue_geonode/geoshape/local_settings.py || getFulcrumApiKey
+grep -q '^FULCRUM_API_KEYS' ${EXCHANGE_LOCAL_SETTINGS} || getFulcrumApiKey
 
-#add to /var/lib/geonode/rogue_geonode/geoshape/urls.py:
-grep -qF 'from django_fulcrum.urls import urlpatterns as django_fulcrum_urls' /var/lib/geonode/rogue_geonode/geoshape/urls.py ||
-printf "from django_fulcrum.urls import urlpatterns as django_fulcrum_urls\nurlpatterns += django_fulcrum_urls" >> /var/lib/geonode/rogue_geonode/geoshape/urls.py
+#add to ${EXCHANGE_URLS}:
+grep -qF 'from django_fulcrum.urls import urlpatterns as django_fulcrum_urls' ${EXCHANGE_URLS} ||
+printf "from django_fulcrum.urls import urlpatterns as django_fulcrum_urls\nurlpatterns += django_fulcrum_urls" >> ${EXCHANGE_URLS}
 
-#add to /var/lib/geonode/rogue_geonode/geoshape/celery_app.py:
-grep -qF 'from django.conf import settings' /var/lib/geonode/rogue_geonode/geoshape/celery_app.py || echo "from django.conf import settings" >> /var/lib/geonode/rogue_geonode/geoshape/celery_app.py
-grep -qF 'app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)' /var/lib/geonode/rogue_geonode/geoshape/celery_app.py || echo "app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)" >> /var/lib/geonode/rogue_geonode/geoshape/celery_app.py
+#add to ${EXCHANGE_CELERY_APP}:
+grep -qF 'from django.conf import settings' ${EXCHANGE_CELERY_APP} || echo "from django.conf import settings" >> ${EXCHANGE_CELERY_APP}
+grep -qF 'app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)' ${EXCHANGE_CELERY_APP} || echo "app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)" >> ${EXCHANGE_CELERY_APP}
 
 #add to /etc/supervisord.conf:
-grep -qF 'programs=uwsgi,celery-worker1,celery-worker2,celery-worker3,celery-worker4,celery-worker5,celery-beat' /etc/supervisord.conf || sed -i "s/^programs.*/programs=uwsgi,celery-worker1,celery-worker2,celery-worker3,celery-worker4,celery-worker5,celery-beat/" /etc/supervisord.conf
+grep -qF 'programs=waitress,celery-worker,celery-beat' /etc/supervisord.conf || sed -i "s/^programs.*/programs=waitress,celery-worker,celery-beat/" /etc/supervisord.conf
 
 grep -qF '[program:celery-beat]' /etc/supervisord.conf ||
 printf "[program:celery-beat]\n\
-command =   /var/lib/geonode/bin/celery beat\n\
-            --app=geoshape.celery_app\n\
-            --uid geoshape\n\
+command =   /opt/boundless/exchange/.venv/bin/celery beat\n\
+            --app=exchange.celery_app\n\
+            --uid exchange\n\
             --loglevel=info\n\
-            --workdir=/var/lib/geonode/rogue_geonode\n\
+            --workdir=/opt/boundless/exchange/bex\n\
 stdout_logfile=/var/log/celery/celery-beat-stdout.log\n\
 stderr_logfile=/var/log/celery/celery-beat-stderr.log\n\
 autostart=true\n\
@@ -127,5 +146,23 @@ autorestart=true\n\
 startsecs=10\n\
 stopwaitsecs=600\n" >> /etc/supervisord.conf
 
+# WARNING: this is extremly fragile, needs to be checked everytime exchange / geonode is updated
 # add to /var/lib/geonode/lib/python2.7/site-packages/geonode/layers/models.py
-sed -i "224i \ \ \ \ \ \ \ \ unique_together = ('store', 'name')" /var/lib/geonode/lib/python2.7/site-packages/geonode/layers/models.py
+# needs the line number of "permissions = ("
+#     class Meta:
+#        # custom permissions,
+#        # change and delete are standard in django-guardian
+#        permissions = (
+
+sed -i "255i \ \ \ \ \ \ \ \ unique_together = ('store', 'name')" ${GEONODE_LAYERS_MODELS}
+
+cd /opt/boundless/exchange
+python manage.py collectstatic --noinput
+python manage.py makemigrations
+python manage.py migrate
+
+# django celery migration problem
+python manage.py migrate djcelery 0001 --fake
+python manage.py migrate djcelery
+
+supervisorctl restart exchange:waitress
