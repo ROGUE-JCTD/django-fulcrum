@@ -17,7 +17,7 @@ from __future__ import unicode_literals, absolute_import
 from django.apps import AppConfig
 from django.core.cache import cache
 from hashlib import md5
-from sys import exit
+from sys import exit, exc_info
 from multiprocessing import current_process
 
 
@@ -54,6 +54,9 @@ class DjangoFulcrumConfig(AppConfig):
         except AppRegistryNotReady:
             print("Apps not yet loaded.")
             exit(1)
+        except:
+            print("Unknown Error: ", exc_info())
+            return
 
 
 def test_cache():
