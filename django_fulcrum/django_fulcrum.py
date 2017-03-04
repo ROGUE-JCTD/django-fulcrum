@@ -24,6 +24,7 @@ from django.conf import settings
 from .models import Layer, get_data_dir
 import time
 from geoserver.catalog import Catalog
+from geoserver.layer import Layer as GeoserverLayer
 import subprocess
 from django.db import connection, connections, ProgrammingError, OperationalError, transaction
 from django.db.utils import ConnectionDoesNotExist, IntegrityError
@@ -161,8 +162,8 @@ class DjangoFulcrum:
                 except ConnectionDoesNotExist:
                     database_alias = None
                 if upload_to_db(uploads, layer.layer_name, media_map, database_alias=database_alias):
-                    publish_layer(layer.layer_name, database_alias=database_alias)
-                    update_geoshape_layers()
+                    gs_layer, _ = publish_layer(layer.layer_name, database_alias=database_alias)
+                    update_geoshape_layers(gs_layer)
                     send_task('django_fulcrum.tasks.task_update_tiles', (uploads, layer.layer_name))
                 with transaction.atomic():
                     layer.layer_date = int(latest_time)
@@ -407,7 +408,7 @@ def append_time_to_features(features, properties_key_of_date=None):
     return features
 
 
-def process_fulcrum_data(f):
+def process_fulcrum_data(f, request):
     """
 
     Args:
@@ -432,7 +433,7 @@ def process_fulcrum_data(f):
                         # handled implicitly with geogig.
                         continue
                     print("Uploading the geojson file: {}".format(os.path.abspath(os.path.join(folder, filename))))
-                    if upload_geojson(file_path=os.path.abspath(os.path.join(folder, filename))):
+                    if upload_geojson(file_path=os.path.abspath(os.path.join(folder, filename)), request=request):
                         layers += [os.path.splitext(filename)[0]]
         shutil.rmtree(os.path.splitext(file_path)[0])
     return layers
@@ -487,7 +488,7 @@ def unzip_file(file_path):
         zf.extractall(os.path.join(get_data_dir(), os.path.splitext(file_path)[0]))
 
 
-def upload_geojson(file_path=None, geojson=None):
+def upload_geojson(file_path=None, geojson=None, request=None):
     """
 
     Args:
@@ -498,6 +499,7 @@ def upload_geojson(file_path=None, geojson=None):
         True if every step successfully completes.
 
     """
+
     from_file = False
     if file_path and geojson:
         print("upload_geojson() must take file_path OR features")
@@ -587,8 +589,9 @@ def upload_geojson(file_path=None, geojson=None):
 
     table_name = layer.layer_name
     if upload_to_db(uploads, table_name, media_keys, database_alias=database_alias):
-        publish_layer(table_name, database_alias=database_alias)
-        update_geoshape_layers()
+        gs_layer, _ = publish_layer(table_name, database_alias=database_alias)
+        update_geoshape_layers(gs_layer, request=request)
+
     return True
 
 
@@ -877,26 +880,28 @@ def convert_to_degrees(value):
     return d + (m / 60.0) + (s / 3600.0)
 
 
-def update_geoshape_layers():
+def update_geoshape_layers(geoserver_layer, request=None):
     """
-        Makes a subprocess call to tell geoshape to make available any new postgis layers.
+    Asynchronously runs gs_slup to update a GeoNode layer.
+    Returns: None
+    """
+    from .tasks import update_geonode_layers
 
-    Returns:
-        None
-    """
-    if not getattr(settings, 'SITENAME', '').lower() == 'geoshape':
-        return
-    python_bin = '/var/lib/geonode/bin/python'
-    manage_script = '/var/lib/geonode/rogue_geonode/manage.py'
-    env = {}
-    execute = [python_bin,
-               manage_script,
-               'updatelayers',
-               '--ignore-errors',
-               '--remove-deleted',
-               '--skip-unadvertised']
-    devnull = open(os.devnull, 'wb')
-    subprocess.Popen(execute, env=env, stdout=devnull, stderr=devnull)
+    owner = 'admin'
+    if request:
+        owner = request.user.username
+
+    params = dict(filter=geoserver_layer.name, owner=owner, execute_signals=True)
+
+    if isinstance(geoserver_layer, GeoserverLayer):
+        params.setdefault('workspace', geoserver_layer.resource.workspace.name)
+        params.setdefault('store', geoserver_layer.resource.store.name)
+
+    else:
+        params.setdefault('workspace', geoserver_layer.workspace.name)
+        params.setdefault('store', geoserver_layer.store.name)
+
+    update_geonode_layers.delay(**params)
 
 
 def upload_to_db(feature_data, table, media_keys, database_alias=None):

@@ -18,7 +18,6 @@
 
 from __future__ import absolute_import
 
-from .django_fulcrum import DjangoFulcrum, truncate_tiles
 from django.conf import settings
 from django.core.cache import cache
 from celery import shared_task
@@ -30,8 +29,25 @@ from fulcrum.exceptions import UnauthorizedException
 import time
 
 
+@shared_task(name="django_fulcrum.tasks.update_geonode_layers")
+def update_geonode_layers(**kwargs):
+    """
+    Runs update layers.
+    """
+    from geonode.geoserver.helpers import gs_slurp
+    from geonode.people.models import Profile
+
+    owner = kwargs.get('owner')
+
+    if owner and not isinstance(owner, Profile):
+        kwargs['owner'] = Profile.objects.get(username=owner)
+
+    return gs_slurp(**kwargs)
+
 @shared_task(name="django_fulcrum.tasks.task_update_layers")
 def task_update_layers():
+
+    from .django_fulcrum import DjangoFulcrum
 
     fulcrum_api_keys = []
     try:
@@ -80,6 +96,8 @@ def pull_s3_data():
 
 @shared_task(name="django_fulcrum.tasks.task_update_tiles")
 def update_tiles(filtered_features, layer_name=''):
+    from .django_fulcrum import truncate_tiles
+
     truncate_tiles(layer_name=layer_name.lower(), srs=4326)
     truncate_tiles(layer_name=layer_name.lower(), srs=900913)
 

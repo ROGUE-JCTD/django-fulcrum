@@ -49,7 +49,7 @@ def upload(request):
         print request.FILES
         if form.is_valid():
             check_filters()
-            available_layers = process_fulcrum_data(request.FILES['file'])
+            available_layers = process_fulcrum_data(request.FILES['file'], request=request)
             for layer in available_layers:
                 if get_geojson(layer=layer):
                     geojson_dict[layer] = json.loads(get_geojson(layer=layer))
