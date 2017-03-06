@@ -155,6 +155,7 @@ stopwaitsecs=600\n" >> /etc/supervisord.conf
 #        permissions = (
 
 sed -i "255i \ \ \ \ \ \ \ \ unique_together = ('store', 'name')" ${GEONODE_LAYERS_MODELS}
+sed -i 's|--workdir=/opt/boundless/exchange/bex|--workdir=/opt/boundless/exchange/|' /etc/supervisord.conf
 
 cd /opt/boundless/exchange
 python manage.py collectstatic --noinput

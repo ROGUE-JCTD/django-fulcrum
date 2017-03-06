@@ -25,7 +25,6 @@ from .models import Layer, get_data_dir
 import time
 from geoserver.catalog import Catalog
 from geoserver.layer import Layer as GeoserverLayer
-import subprocess
 from django.db import connection, connections, ProgrammingError, OperationalError, transaction
 from django.db.utils import ConnectionDoesNotExist, IntegrityError
 import re
@@ -408,7 +407,7 @@ def append_time_to_features(features, properties_key_of_date=None):
     return features
 
 
-def process_fulcrum_data(f, request):
+def process_fulcrum_data(f, request=None):
     """
 
     Args:
