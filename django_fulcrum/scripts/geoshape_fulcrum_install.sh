@@ -69,8 +69,9 @@ printf "CELERYBEAT_SCHEDULE = {\n\
         'args': None\n\
     },\n\
 \n}\n" >>  ${EXCHANGE_SETTINGS}
-grep -q '^USE_TZ'  ${EXCHANGE_SETTINGS} && sed -i "s/^USE_TZ.*/USE_TZ = False/"  ${EXCHANGE_SETTINGS} || echo "USE_TZ = False" >>  ${EXCHANGE_SETTINGS}
-grep -q '^TIME_ZONE'  ${EXCHANGE_SETTINGS} && sed -i "s/^TIME_ZONE.*/TIME_ZONE = None/"  ${EXCHANGE_SETTINGS} || echo "TIME_ZONE = None" >>  ${EXCHANGE_SETTINGS}
+grep -q '^USE_TZ'  ${EXCHANGE_SETTINGS} && sed -i "s/^USE_TZ.*/USE_TZ = True/"  ${EXCHANGE_SETTINGS} || echo "USE_TZ = True" >>  ${EXCHANGE_SETTINGS}
+grep -q '^TIME_ZONE'  ${EXCHANGE_SETTINGS} && sed -i "s/^TIME_ZONE.*/TIME_ZONE = 'UTC'/"  ${EXCHANGE_SETTINGS} || echo "TIME_ZONE = 'UTC'" >>  ${EXCHANGE_SETTINGS}
+echo 'CELERY_ENABLE_UTC = True' >> ${EXCHANGE_SETTINGS}
 grep -q "^CACHES ="  ${EXCHANGE_SETTINGS} ||
 printf "CACHES = {\n\
      'default': {\n\
