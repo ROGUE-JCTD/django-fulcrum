@@ -140,6 +140,21 @@ To import data you can (all of which will be run through existing filters):
  Note that zip files are extracted and imported.  Extracted files are deleted but zip files are left in the FULCRUM_UPLOAD folder.
  The advantage of using the API key is that all of your data will be downloaded and updated automatically. Furthermore it includes videos and audio files that historically have not been included in Fulcrum exports.
 
+## Celery Tasks
+ - 'Django_fulcrum.tasks.task_filter_assets'
+ - 'Django_fulcrum.tasks.task_filter_features'
+    Goes through every layer looks for us phone number and geospatial filter
+ - 'Django_fulcrum.tasks.task_update_layers'
+    Pulls data from fulcrum api (looks like it is json data), then seems to import it
+ - 'Django_fulcrum.tasks.pull_s3_data'
+    Every 120 seconds, celery-beat triggers this task
+    Pulls zip file from S3 and puts it on disk, then runs “process fulcrum data”
+ - 'Django_fulcrum.tasks.task_update_tiles'
+    Truncates Geowebcache tiles runs via celery-beat every 30 sec
+ - 'Django_fulcrum.tasks.update_geonode_layers'
+    Publishes a layer in geonode from a geoserver record
+
+
 ## Known Issues
 - Tiles are completely dumped when a layer is updated.  This is because the GWC bounding box tools was unsuccessful during various attempts even using their built in web tool.  This solution while inefficient is probably ok for static datasets and rarely updated data, as opposed to just not caching tiles at all.
 
