@@ -22,7 +22,7 @@ import os
 import json
 from datetime import datetime, timedelta
 
-if getattr(settings, 'SITENAME', '').lower() == 'geoshape':
+if getattr(settings, 'SITENAME', '').lower() == 'exchange':
     fulcrum_media_dir = getattr(settings, 'FILESERVICE_CONFIG', {}).get('store_dir')
 else:
     fulcrum_media_dir = getattr(settings, 'MEDIA_ROOT', None)
