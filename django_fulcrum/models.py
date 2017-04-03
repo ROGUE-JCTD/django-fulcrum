@@ -43,6 +43,9 @@ if not fulcrum_data_dir:
 def get_media_dir():
     return fulcrum_media_dir
 
+def get_base_url():
+    if getattr(settings, 'FILESERVICE_CONFIG', {}).get('store_dir'):
+        return '/api/fileservice/view/'
 
 def get_data_dir():
     return fulcrum_data_dir
@@ -115,7 +118,7 @@ class Asset(models.Model):
     """Structure to hold file locations."""
     asset_uid = models.CharField(max_length=100, primary_key=True)
     asset_type = models.CharField(max_length=100)
-    asset_data = models.FileField(storage=CustomStorage(location=get_media_dir()), upload_to=get_asset_name)
+    asset_data = models.FileField(storage=CustomStorage(location=get_media_dir(), base_url=get_base_url()), upload_to=get_asset_name)
     asset_added_time = models.DateTimeField(default=timezone.now())
 
     def delete(self, *args, **kwargs):
@@ -181,7 +184,7 @@ class FulcrumApiKey(models.Model):
 
 
 def get_init_time():
-    return datetime(1, 1, 1)
+    return datetime(2000, 1, 1)
 
 
 class Filter(models.Model):

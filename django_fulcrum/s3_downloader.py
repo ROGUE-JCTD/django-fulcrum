@@ -25,7 +25,9 @@ import boto3
 import botocore
 from .django_fulcrum import process_fulcrum_data
 import glob
+import logging
 
+logger = logging.getLogger(__file__)
 
 def is_loaded(file_name):
     s3_file = S3Sync.objects.filter(s3_filename=file_name)
@@ -86,22 +88,22 @@ def pull_all_s3_data():
                         if not bucket:
                             continue
                         try:
-                            print("Getting files from {}".format(bucket))
+                            logger.info("Getting files from {}".format(bucket))
                             s3_bucket_obj = s3.Bucket(bucket)
                             for s3_file in s3_bucket_obj.objects.all():
-                                print str(s3_file.key) + " " + str(s3_file.size)
+                                logger.info(str(s3_file.key) + " " + str(s3_file.size))
                                 handle_file(s3_bucket_obj, s3_file)
                         except botocore.exceptions.ClientError:
-                            print("There is an issue with the bucket and/or credentials,")
-                            print("for bucket: {} and access_key {}".format(s3_credential.get('s3_bucket'),
+                            logger.error("There is an issue with the bucket and/or credentials,")
+                            logger.error("for bucket: {} and access_key {}".format(s3_credential.get('s3_bucket'),
                                                                             s3_credential.get('s3_key')))
                             continue
             else:
-                print("There are no S3 Credentials defined in the settings or admin console.")
+                logger.error("There are no S3 Credentials defined in the settings or admin console.")
         except Exception as e:
             # This exception catches everything, which is bad for debugging, but if it isn't here
             # the lock is not released which makes it challenging to restore the proper state.
-            print(repr(e))
+            logger.error(repr(e))
         finally:
             release_lock(lock_id)
 
@@ -121,6 +123,6 @@ def handle_file(s3_bucket_obj, s3_file):
     s3_download(s3_bucket_obj, s3_file)
 
     clean_up_partials(s3_file.key)
-    print("Processing: {}".format(s3_file.key))
+    logger.info("Processing: {}".format(s3_file.key))
     process_fulcrum_data(s3_file.key)
     S3Sync.objects.create(s3_filename=s3_file.key)

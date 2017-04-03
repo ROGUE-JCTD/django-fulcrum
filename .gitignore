@@ -26,3 +26,6 @@ build/
 init.py*
 manage.py
 *~
+*.egg-info
+*.djcache
+dist

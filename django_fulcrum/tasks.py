@@ -19,7 +19,7 @@
 from __future__ import absolute_import
 
 from django.conf import settings
-from django.core.cache import cache
+from django.core.cache import caches
 from celery import shared_task
 from hashlib import md5
 from .s3_downloader import pull_all_s3_data
@@ -27,6 +27,9 @@ from .models import FulcrumApiKey
 from .filters.run_filters import check_filters
 from fulcrum.exceptions import UnauthorizedException
 import time
+import logging
+
+logger = logging.getLogger(__file__)
 
 
 @shared_task(name="django_fulcrum.tasks.update_geonode_layers")
@@ -62,7 +65,7 @@ def task_update_layers():
         fulcrum_api_keys += [api_key.fulcrum_api_key]
 
     if not fulcrum_api_keys:
-        print("Cannot update layers from fulcrum without an API key added to the admin page, "
+        logging.error("Cannot update layers from fulcrum without an API key added to the admin page, "
               "or FULCRUM_API_KEYS = ['some_key'] defined in settings.")
 
     # http://docs.celeryproject.org/en/latest/tutorials/task-cookbook.html#ensuring-a-task-is-only-executed-one-at-a-time
@@ -81,7 +84,7 @@ def task_update_layers():
                     django_fulcrum = DjangoFulcrum(fulcrum_api_key=fulcrum_api_key)
                     django_fulcrum.update_all_layers()
                 except UnauthorizedException:
-                    print("The API key ending in: {}, is unauthorized.".format(fulcrum_api_key[-4:]))
+                    logging.error("The API key ending in: {}, is unauthorized.".format(fulcrum_api_key[-4:]))
                     continue
         finally:
             release_lock(lock_id)
@@ -146,7 +149,7 @@ def task_filter_assets(filter_name, after_time_added, run_once=False, run_time=N
             for asset in assets:
                 if asset.asset_type == 'photos':
                     if not is_valid_photo(asset.asset_data.path, filter_name=filter_name, run_once=run_once):
-                        print("Attempting to delete {}".format(asset.asset_data.path))
+                        logging.info("Attempting to delete {}".format(asset.asset_data.path))
                         delete_list += [asset.asset_uid]
             for asset_uid in delete_list:
                 Asset.objects.filter(asset_uid__iexact=asset_uid).delete()
@@ -159,7 +162,7 @@ def task_filter_assets(filter_name, after_time_added, run_once=False, run_time=N
 def is_feature_task_locked():
     """Returns True if one of the tasks which add features is currently running."""
     for task_name in list_task_names():
-        if cache.get(get_lock_id(task_name)):
+        if caches['fulcrum'].get(get_lock_id(task_name)):
             return True
 
 
@@ -172,7 +175,7 @@ def is_filter_task_locked(filter_name):
     from .models import Filter
 
     for task_name in list_task_names():
-        if cache.get(Filter.get_lock_id(task_name, filter_name)):
+        if caches['fulcrum'].get(Filter.get_lock_id(task_name, filter_name)):
             return True
 
 
@@ -192,8 +195,8 @@ def list_task_names():
 
 
 def acquire_lock(lock_id, expire):
-    return cache.add(lock_id, True, expire)
+    return caches['fulcrum'].add(lock_id, True, expire)
 
 
 def release_lock(lock_id):
-    return cache.delete(lock_id)
+    return caches['fulcrum'].delete(lock_id)

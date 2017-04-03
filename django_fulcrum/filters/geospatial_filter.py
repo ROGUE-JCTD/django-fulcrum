@@ -3,7 +3,9 @@ from shapely.geometry import Point, shape
 from types import DictType
 import json
 import copy
+import logging
 
+logger = logging.getLogger(__file__)
 
 def filter_features(input_features, **kwargs):
     """
@@ -17,8 +19,8 @@ def filter_features(input_features, **kwargs):
         if input_features.get("features"):
             return iterate_geojson(input_features, **kwargs)
     else:
-        print "The function filter_features is returning none due " \
-              "to an invalid input_features type: {}.".format(type(input_features))
+        logger.error("The function filter_features is returning none due " \
+              "to an invalid input_features type: {}.".format(type(input_features)))
         return None
 
 
@@ -38,7 +40,7 @@ def iterate_geojson(input_features, filter_inclusion=None, **kwargs):
     linked_filter, filter_list = create_filter_list(**kwargs)
     if not linked_filter:
         if filter_inclusion is None:
-            print('The filter has not been linked to a filter_name.')
+            logging.error('The filter has not been linked to a filter_name.')
             return False
     else:
         filter_inclusion = linked_filter.filter_inclusion
@@ -116,7 +118,7 @@ def setup_filter_model():
     try:
         geospatial_filter = Filter.objects.get(filter_name__iexact='geospatial_filter.py')
     except ObjectDoesNotExist:
-        print("Geospatial Filter hasn't been saved to the database yet.")
+        logging.error("Geospatial Filter hasn't been saved to the database yet.")
         return False
     boundary_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'boundary_polygons')
     for boundary_file in os.listdir(boundary_file_path):
@@ -159,6 +161,6 @@ def get_boundary_features(geojson, buffer_dist):
                 if geometry.geom_type is 'MultiPolygon' or geometry.geom_type is 'Polygon':
                     boundaries += [geometry]
     except ValueError:
-        print "Error getting polygon data"
+        logging.error("Error getting polygon data")
         return False
     return boundaries

@@ -18,7 +18,9 @@ from .filters.run_filters import check_filters
 from django.http import HttpResponse
 from django.conf import settings
 import json
+import logging
 
+logger = logging.getLogger(__file__)
 
 def index(request):
     return viewer(request)
@@ -46,7 +48,7 @@ def upload(request):
     geojson_dict = {}
     if request.method == 'POST':
         form = UploadFulcrumData(request.POST, request.FILES)
-        print request.FILES
+        logger.debug(request.FILES)
         if form.is_valid():
             check_filters()
             available_layers = process_fulcrum_data(request.FILES['file'], request=request)
@@ -55,7 +57,7 @@ def upload(request):
                     geojson_dict[layer] = json.loads(get_geojson(layer=layer))
             return HttpResponse(json.dumps(geojson_dict), content_type="application/json")
         else:
-            print "FORM NOT VALID."
+            logger.error("FORM NOT VALID.")
     else:
         form = UploadFulcrumData()
     return render(request, 'django_fulcrum/upload.html', {'form': form})
@@ -87,30 +89,3 @@ def viewer(request):
 def layers(request):
     from .mapping import get_layer_names
     return HttpResponse(json.dumps(get_layer_names()), content_type="application/json")
-
-
-def pzworkflow(request):
-    from .fetch_workflow import PzWorkflow
-    if request.method == 'POST':
-        json_data = request.body
-        print "Data passed in: " + json_data
-        pz = PzWorkflow("http://pz-workflow.cf.piazzageo.io")
-        print "Pz health check returned: " + str(pz.status())
-        if pz.status() == 200:
-            response = pz.request(json_data)
-            if response:
-                user_request = json.loads(json_data)
-                if user_request.get('action') == 'get':
-                    return HttpResponse(json.dumps(response), content_type="application/json")
-                elif user_request.get('action') == 'post':
-                    return HttpResponse(json.dumps(response.json()), content_type="application/json")
-                elif user_request.get('action') == 'get_all':
-                    return HttpResponse(json.dumps(response.json()), content_type="application/json")
-                elif user_request.get('action') == 'delete':
-                    return HttpResponse(json.dumps(response.json()), content_type="application/json")
-                else:
-                    return HttpResponse("What one earth happened", status=400)
-            else:
-                return HttpResponse("Error with your request.", status=400)
-        else:
-            return HttpResponse("Pz-Workflow does not appear to be running", status=400)
