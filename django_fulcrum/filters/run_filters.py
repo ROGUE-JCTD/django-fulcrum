@@ -50,7 +50,7 @@ def filter_features(features, filter_name=None, run_once=False):
                             logging.error(te)
                             logging.error("Could not filter features - TypeError")
                         except Exception as e:
-                            "Unknown error occurred, could not filter features"
+                            logging.error("Unknown error occurred, could not filter features")
                             logging.error(repr(e))
                         if filtered_results:
                             if filtered_results.get('failed').get('features'):
@@ -81,6 +81,7 @@ def filter_features(features, filter_name=None, run_once=False):
     else:
         features = None
         filtered_feature_count = 0
+    logger.debug("returning {0} features".format(filtered_feature_count))
     return features, filtered_feature_count
 
 
@@ -92,15 +93,14 @@ def check_filters():
     Sets cache value so function will not running fully every time it is called by tasks.py
     """
     from ..models import Filter
-    from ..tasks import get_lock_id
+    from ..tasks import get_lock, set_lock, get_lock_id
     from django.db import IntegrityError
     from importlib import import_module
-    from django.core.cache import caches
     workspace = os.path.dirname(os.path.abspath(__file__))
     files = os.listdir(workspace)
     if files:
         lock_id = get_lock_id('list-filters-success')
-        if caches['fulcrum'].get(lock_id):
+        if get_lock(lock_id):
             return True
         if not check_init():
             return False
@@ -122,7 +122,7 @@ def check_filters():
                             return False
                 except ImportError:
                     return False
-        caches['fulcrum'].set(lock_id, True, 20)
+        set_lock(lock_id, True, 20)
     return True
 
 

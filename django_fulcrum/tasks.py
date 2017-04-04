@@ -162,7 +162,7 @@ def task_filter_assets(filter_name, after_time_added, run_once=False, run_time=N
 def is_feature_task_locked():
     """Returns True if one of the tasks which add features is currently running."""
     for task_name in list_task_names():
-        if caches['fulcrum'].get(get_lock_id(task_name)):
+        if get_lock(get_lock_id(task_name)):
             return True
 
 
@@ -175,12 +175,14 @@ def is_filter_task_locked(filter_name):
     from .models import Filter
 
     for task_name in list_task_names():
-        if caches['fulcrum'].get(Filter.get_lock_id(task_name, filter_name)):
+        if get_lock(Filter.get_lock_id(task_name, filter_name)):
             return True
 
 
 def get_lock_id(name):
-    return '{0}-lock-{1}'.format(name, md5(name).hexdigest())
+    lock_id = '{0}-lock-{1}'.format(name, md5(name).hexdigest())
+    logger.debug("lock id: {0}".format(lock_id))
+    return lock_id
 
 
 def list_task_names():
@@ -193,10 +195,29 @@ def list_task_names():
             continue
     return names
 
+def get_lock(lock_id):
+    lock = caches['fulcrum'].get(lock_id)
+    if lock:
+        logger.debug("lock {0} exists".format(lock_id))
+    else:
+        logger.debug("lock {0} does NOT exist".format(lock_id))
+    return lock
+
+
+def set_lock(lock_id, *args):
+    logger.debug("Setting lock {0}".format(lock_id))
+    caches['fulcrum'].set(lock_id, args)
+
 
 def acquire_lock(lock_id, expire):
-    return caches['fulcrum'].add(lock_id, True, expire)
+    lock = caches['fulcrum'].add(lock_id, True, expire)
+    if lock:
+        logger.debug("Successfully obtained lock {0}".format(lock_id))
+    else:
+        logger.debug("Failed to obtain lock {0}".format(lock_id))
+    return lock
 
 
 def release_lock(lock_id):
+    logger.debug("Releasing lock {0}".format(lock_id))
     return caches['fulcrum'].delete(lock_id)

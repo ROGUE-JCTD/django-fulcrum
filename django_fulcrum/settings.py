@@ -7,8 +7,6 @@ try:
 except ImportError:
     pass
 
-EXCHANGE_LOCAL_SETTINGS = locals().get('EXCHANGE_LOCAL_SETTINGS', os.getenv('EXCHANGE_LOCAL_SETTINGS', '/opt/boundless/exchange/bex/settings.py'))
-
 INSTALLED_APPS = locals().get('INSTALLED_APPS', tuple())
 INSTALLED_APPS += ('django_fulcrum',)
 
@@ -49,6 +47,8 @@ if locals().get('DATABASES'):
 
 FULCRUM_API_KEY= os.getenv("FULCRUM_API_KEY")
 FULCRUM_UPLOAD = os.getenv("FULCRUM_UPLOAD")
+if not FULCRUM_UPLOAD:
+    raise Exception("Django_Fulcrum requires an upload directory.")
 FULCRUM_LAYER_PREFIX = os.getenv('FULCRUM_LAYER_PREFIX')
 
 S3_CREDENTIALS = [
@@ -65,7 +65,7 @@ S3_CREDENTIALS = [
 CACHES = locals().get('CACHES', {})
 CACHES['fulcrum'] = {
         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': os.path.dirname(__file__),
+        'LOCATION': os.path.abspath(FULCRUM_UPLOAD),
     }
 
 CELERY_ACCEPT_CONTENT = locals().get('CELERY_ACCEPT_CONTENT', ['json'])

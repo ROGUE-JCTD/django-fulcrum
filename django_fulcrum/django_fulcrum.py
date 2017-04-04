@@ -505,7 +505,7 @@ def upload_geojson(file_path=None, geojson=None, request=None):
 
     from_file = False
     if file_path and geojson:
-        logger.info("upload_geojson() must take file_path OR features")
+        logger.warn("upload_geojson() must take file_path OR features")
         return False
     elif geojson:
         geojson = geojson
@@ -513,15 +513,17 @@ def upload_geojson(file_path=None, geojson=None, request=None):
         with open(file_path, 'r+') as data_file:
             geojson = json.load(data_file)
     else:
-        logger.info("upload_geojson() must take file_path OR features")
-
-    geojson, filtered_count = filter_features(geojson)
-
-    if not geojson:
+        logger.error("upload_geojson() must take file_path OR features")
         return False
 
-    if geojson.get('features'):
-        features = geojson.get('features')
+    filtered_features, filtered_count = filter_features(geojson)
+
+    if not filtered_features:
+        logger.info("No features passed the filter for file: {0}".format(file_path))
+        return False
+
+    if filtered_features.get('features'):
+        features = filtered_features.get('features')
     else:
         logger.info("Upload for file_path {}, contained no features.".format(file_path))
         return False
@@ -587,6 +589,7 @@ def upload_geojson(file_path=None, geojson=None, request=None):
 
     try:
         database_alias = 'fulcrum'
+        connections[database_alias]
     except ConnectionDoesNotExist:
         database_alias = None
 
@@ -631,6 +634,7 @@ def get_update_layer_media_keys(media_keys=None, layer=None):
     Returns:
         The Layer media keys.
     """
+    logger.debug("get_update_layer_media_keys({0},{1})".format(media_keys, layer))
     with transaction.atomic():
         layer_media_keys = json.loads(layer.layer_media_keys)
         for media_key in media_keys:
@@ -658,9 +662,11 @@ def write_layer(name, layer_id='', date=0, media_keys=None):
     if not media_keys:
         media_keys = {}
     with transaction.atomic():
+        layer_prefix = ''
         if getattr(settings, 'FULCRUM_LAYER_PREFIX'):
             layer_prefix = "{0}_".format(settings.FULCRUM_LAYER_PREFIX)
         layer_name = '{0}{1}'.format(layer_prefix, name.lower())
+        logger.debug("writing layer: {0}".format(layer_name))
         try:
             layer, layer_created = Layer.objects.get_or_create(layer_name=layer_name,
                                                                layer_uid=layer_id,
@@ -685,6 +691,7 @@ def write_feature(key, version, layer, feature_data):
         The feature model object.
     """
     with transaction.atomic():
+        logger.debug("write_feature({0}{1}{2}{3})".format(key, version, layer, feature_data))
         feature, feature_created = Feature.objects.get_or_create(feature_uid=key,
                                                                  feature_version=version,
                                                                  defaults={'layer': layer,
@@ -752,9 +759,13 @@ def write_asset_from_file(asset_uid, asset_type, file_dir):
         asset, created = Asset.objects.get_or_create(asset_uid=asset_uid, asset_type=asset_type)
         if created:
             if os.path.isfile(file_path):
-                with open(file_path, 'w') as open_file:
-                    asset.asset_data.save(os.path.splitext(os.path.basename(file_path))[0],
-                                          File(open_file))
+                with open(file_path, 'rb') as open_file:
+                    logger.debug("writing file: {0}".format(file_path))
+                    try:
+                        asset.asset_data.save(asset_uid, File(open_file))
+                    except Exception as e:
+                        logger.error("THERE WAS AN ERROR SAVING FILE {0}".format(file_path))
+                        logger.error(e)
             else:
                 logger.info("The file {} was not found, and is most likely missing from the archive, "
                       "or was filtered out (if using filters).".format(file_path))
@@ -930,7 +941,7 @@ def upload_to_db(feature_data, table, media_keys, database_alias=None):
     if type(feature_data) != list:
         feature_data = [feature_data]
 
-    if getattr(settings, 'SITENAME', '').lower() == 'exchange':
+    if getattr(settings, 'SITENAME', '').lower() in ['exchange', 'geoshape', 'geonode']:
         feature_data = prepare_features_for_geonode(feature_data, media_keys=media_keys)
 
     key_name = 'fulcrum_id'
@@ -978,6 +989,7 @@ def is_db_supported(database_alias=None):
         db_conn = connections[database_alias]
     else:
         db_conn = connection
+    db_conn.close()
 
     if 'postgis' not in db_conn.settings_dict.get('ENGINE') and 'postgres' not in db_conn.settings_dict.get('ENGINE'):
         return False
@@ -997,6 +1009,8 @@ def prepare_features_for_geonode(feature_data, media_keys=None):
 
     """
 
+
+
     if not feature_data:
         return None
 
@@ -1005,6 +1019,8 @@ def prepare_features_for_geonode(feature_data, media_keys=None):
 
     if not media_keys:
         return feature_data
+
+    logger.debug('preparing {} features for geonode'.format(len(feature_data)))
 
     maploom_media_keys = ["photos", "videos", "audios", "fotos"]
 
@@ -1119,7 +1135,7 @@ def get_pg_conn_string(database_alias=None):
         db_conn = connections[database_alias]
     else:
         db_conn = connection
-    db_conn.close()
+
     return "host={host} " \
            "port={port} " \
            "dbname={database} " \
@@ -1715,6 +1731,7 @@ def get_field_map(features):
         for prop, value in feature.get('properties').iteritems():
             if prop not in field_map or isinstance(field_map[prop], type(None)):
                 field_map[prop] = type(value)
+    logger.debug("field map: {0}".format(field_map))
     return field_map
 
 
@@ -1735,6 +1752,7 @@ def get_prototype(field_map):
             prototype[key] = '[]'
         elif isinstance(value, str):
             prototype[key] = ''
+    logger.debug("prototype feature: {0}".format(prototype))
     return prototype
 
 

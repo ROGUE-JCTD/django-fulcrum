@@ -5,7 +5,6 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
 
-FILE_SERVICE_STORE=/opt/geonode/geoserver_data/file-service-store
 FULCRUM_STORE=/opt/geonode/geoserver_data/fulcrum_data
 EXCHANGE_SETTINGS=/etc/profile.d/exchange-settings.sh
 BEX_SETTINGS=/opt/boundless/exchange/bex/settings.py
@@ -19,7 +18,7 @@ sed -i -e "s|export FULCRUM_UPLOAD=.*$||" $EXCHANGE_SETTINGS
 
 # if django-fulcrum is not mounted from host, clone from github
 yum install git -y
-$PYTHON $MANAGE sqlclear django_fulcrum
+
 $PIP uninstall -y django_fulcrum
 
 rm -rf $FULCRUM_STORE
@@ -36,7 +35,7 @@ sed -i -e "s|urlpatterns += django_fulcrum_urls||"  $EXCHANGE_URLS
 
 #add django_fulrum to bex.settings
 grep -qF 'from django_fulcrum.settings import *' ${BEX_SETTINGS} && \
-sed -i -e "s|\nfrom django_fulcrum.settings import.*$||" ${BEX_SETTINGS}
+sed -i -e "s|from django_fulcrum.settings import.*$||" ${BEX_SETTINGS}
 
 # django celery migration problem
 service exchange restart

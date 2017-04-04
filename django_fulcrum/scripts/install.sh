@@ -2,7 +2,7 @@
 # exit on any error
 set -e
 
-FILE_SERVICE_STORE=/opt/geonode/geoserver_data/file-service-store
+FILE_SERVICE_STORE=/opt/boundless/exchange/.storage/media/fileservice
 FULCRUM_STORE=/opt/geonode/geoserver_data/fulcrum_data
 EXCHANGE_SETTINGS=/etc/profile.d/exchange-settings.sh
 BEX_SETTINGS=/opt/boundless/exchange/bex/settings.py
@@ -10,8 +10,10 @@ EXCHANGE_URLS=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/exchange
 EXCHANGE_CELERY_APP=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/exchange/celery_app.py
 PIP=/opt/boundless/exchange/.venv/bin/pip
 PYTHON=/opt/boundless/exchange/.venv/bin/python
-GEONODE_LAYERS_MODELS=/opt/boundless/exchange//.venv/lib/python2.7/site-packages/geonode/layers/models.py
+GEONODE_LAYERS_MODELS=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/geonode/layers/models.py
 MANAGE=/opt/boundless/exchange/manage.py
+
+source $EXCHANGE_SETTINGS
 
 grep FULCRUM_UPLOAD $EXCHANGE_SETTINGS && \
 sed -i -e "s|export FULCRUM_UPLOAD=.*$|export FULCRUM_UPLOAD=\$\{FULCRUM_STORE\:\-'$FULCRUM_STORE'\}|" $EXCHANGE_SETTINGS || \
@@ -29,6 +31,7 @@ $PIP install git+git://github.com/ROGUE-JCTD/django-fulcrum.git@master#egg=djang
 cd ~
 mkdir -p $FULCRUM_STORE
 chown exchange:geoservice $FULCRUM_STORE
+chmod 775 $FULCRUM_STORE
 
 # change permissions to file_service folder so that django_fulcrum can add data to the folder.
 mkdir -p $FILE_SERVICE_STORE
@@ -86,6 +89,8 @@ END
 
 # sed -i "255i \ \ \ \ \ \ \ \ unique_together = ('store', 'name')" ${GEONODE_LAYERS_MODELS}
 # sed -i 's|--workdir=/opt/boundless/exchange/bex|--workdir=/opt/boundless/exchange/|' /etc/supervisord.conf
+
+source $EXCHANGE_SETTINGS
 
 $PYTHON $MANAGE collectstatic --noinput
 $PYTHON $MANAGE makemigrations
