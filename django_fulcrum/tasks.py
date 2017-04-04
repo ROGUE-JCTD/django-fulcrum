@@ -45,7 +45,12 @@ def update_geonode_layers(**kwargs):
     if owner and not isinstance(owner, Profile):
         kwargs['owner'] = Profile.objects.get(username=owner)
 
-    return gs_slurp(**kwargs)
+    geonode_layer = "{0}:{1}".format(kwargs.get("workspace"), kwargs.get("filter"))
+
+    logger.debug("UPDATING GEONODE LAYERS FOR {0}".format(geonode_layer))
+
+    if acquire_lock(get_lock_id(geonode_layer), 30):
+        return gs_slurp(**kwargs)
 
 @shared_task(name="django_fulcrum.tasks.task_update_layers")
 def task_update_layers():
@@ -214,7 +219,7 @@ def acquire_lock(lock_id, expire):
     if lock:
         logger.debug("Successfully obtained lock {0}".format(lock_id))
     else:
-        logger.debug("Failed to obtain lock {0}".format(lock_id))
+        logger.warn("Failed to obtain lock {0}".format(lock_id))
     return lock
 
 

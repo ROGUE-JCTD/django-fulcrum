@@ -15,8 +15,9 @@ Once GeoNode or Exchange has been installed, `django_fulcrum/scripts/install.sh`
 
 
 ## Installation
-The `django_fulcrum/scripts/install.sh` file performs steps needed to configure the app. The following are the steps performed by the script.  
-NOTE: For this app to be functional, you should add at least one of the options: FULCRUM_API_KEYS, FULCRUM_UPLOAD, or S3_CREDENTIALs
+The `install.sh` file performs steps needed to configure the app with Exchange. The following are the steps performed by the script.  
+NOTE: For this app to be functional, you should add at least one of the options: FULCRUM_API_KEYS, FULCRUM_UPLOAD, or S3_CREDENTIALS,
+by default the script will install script will add FULCRUM_UPLOAD to profile.
 
 ##### DATABASES: (Required)
 A database in which the geospatial data can be stored. 

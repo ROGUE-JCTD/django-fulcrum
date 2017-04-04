@@ -24,10 +24,9 @@ sed -i -e "s|export FILE_SERVICE_STORE=.*$|export FILE_SERVICE_STORE=\$\{FILE_SE
 sed -i -e "s|set +e|export FILE_SERVICE_STORE=\$\{FILE_SERVICE_STORE\:\-'$FILE_SERVICE_STORE'\}\nset +e|" $EXCHANGE_SETTINGS
 
 
-# if django-fulcrum is not mounted from host, clone from github
 yum install git -y
 $PIP uninstall -y django_fulcrum
-$PIP install git+git://github.com/ROGUE-JCTD/django-fulcrum.git@master#egg=django_fulcrum
+$PIP install ./
 
 cd ~
 mkdir -p $FULCRUM_STORE
