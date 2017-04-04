@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 import datetime
-from django.utils.timezone import utc
 import django_fulcrum.models
 
 
@@ -19,7 +18,7 @@ class Migration(migrations.Migration):
                 ('asset_uid', models.CharField(max_length=100, serialize=False, primary_key=True)),
                 ('asset_type', models.CharField(max_length=100)),
                 ('asset_data', models.FileField(storage=django_fulcrum.models.CustomStorage(base_url='/api/fileservice/view/', location=b'/opt/boundless/exchange/.storage/media/fileservice'), upload_to=django_fulcrum.models.get_asset_name)),
-                ('asset_added_time', models.DateTimeField(default=datetime.datetime(2017, 4, 4, 11, 53, 5, 773128, tzinfo=utc))),
+                ('asset_added_time', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0))),
             ],
         ),
         migrations.CreateModel(
@@ -29,7 +28,7 @@ class Migration(migrations.Migration):
                 ('feature_uid', models.CharField(max_length=100)),
                 ('feature_version', models.IntegerField(default=0)),
                 ('feature_data', models.TextField()),
-                ('feature_added_time', models.DateTimeField(default=datetime.datetime(2017, 4, 4, 11, 53, 5, 774080, tzinfo=utc))),
+                ('feature_added_time', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0))),
             ],
         ),
         migrations.CreateModel(

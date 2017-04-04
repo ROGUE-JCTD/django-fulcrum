@@ -119,7 +119,7 @@ class Asset(models.Model):
     asset_uid = models.CharField(max_length=100, primary_key=True)
     asset_type = models.CharField(max_length=100)
     asset_data = models.FileField(storage=CustomStorage(location=get_media_dir(), base_url=get_base_url()), upload_to=get_asset_name)
-    asset_added_time = models.DateTimeField(default=timezone.now())
+    asset_added_time = models.DateTimeField(default=default_datetime())
 
     def delete(self, *args, **kwargs):
         super(Asset, self).delete(*args, **kwargs)
@@ -143,7 +143,7 @@ class Feature(models.Model):
     feature_version = models.IntegerField(default=0)
     layer = models.ForeignKey(Layer, on_delete=models.CASCADE, default="")
     feature_data = models.TextField()
-    feature_added_time = models.DateTimeField(default=timezone.now())
+    feature_added_time = models.DateTimeField(default=default_datetime())
 
     class Meta:
         unique_together = (("feature_uid", "feature_version"),)

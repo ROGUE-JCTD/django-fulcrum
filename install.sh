@@ -23,12 +23,9 @@ grep FILE_SERVICE_STORE $EXCHANGE_SETTINGS && \
 sed -i -e "s|export FILE_SERVICE_STORE=.*$|export FILE_SERVICE_STORE=\$\{FILE_SERVICE_STORE\:\-'$FILE_SERVICE_STORE'\}|" $EXCHANGE_SETTINGS || \
 sed -i -e "s|set +e|export FILE_SERVICE_STORE=\$\{FILE_SERVICE_STORE\:\-'$FILE_SERVICE_STORE'\}\nset +e|" $EXCHANGE_SETTINGS
 
-
-yum install git -y
 $PIP uninstall -y django_fulcrum
 $PIP install ./
 
-cd ~
 mkdir -p $FULCRUM_STORE
 chown exchange:geoservice $FULCRUM_STORE
 chmod 775 $FULCRUM_STORE
