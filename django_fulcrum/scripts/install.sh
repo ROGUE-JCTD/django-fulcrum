@@ -26,6 +26,7 @@ sed -i -e "s|set +e|export FILE_SERVICE_STORE=\$\{FILE_SERVICE_STORE\:\-'$FILE_S
 
 # if django-fulcrum is not mounted from host, clone from github
 yum install git -y
+$PIP uninstall -y django_fulcrum
 $PIP install git+git://github.com/ROGUE-JCTD/django-fulcrum.git@master#egg=django_fulcrum
 
 cd ~
@@ -93,7 +94,6 @@ END
 source $EXCHANGE_SETTINGS
 
 $PYTHON $MANAGE collectstatic --noinput
-$PYTHON $MANAGE makemigrations
 $PYTHON $MANAGE migrate
 
 # django celery migration problem

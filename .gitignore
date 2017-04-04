@@ -7,7 +7,6 @@ fulcrum/*
 .idea
 *.pyc
 mvp_app/*
-django_fulcrum/migrations/*
 temp.json
 local_settings.py
 celery.log
