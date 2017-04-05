@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 import datetime
+from django.utils.timezone import utc
 import django_fulcrum.models
 
 
@@ -18,7 +19,7 @@ class Migration(migrations.Migration):
                 ('asset_uid', models.CharField(max_length=100, serialize=False, primary_key=True)),
                 ('asset_type', models.CharField(max_length=100)),
                 ('asset_data', models.FileField(storage=django_fulcrum.models.CustomStorage(base_url='/api/fileservice/view/', location=b'/opt/boundless/exchange/.storage/media/fileservice'), upload_to=django_fulcrum.models.get_asset_name)),
-                ('asset_added_time', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0))),
+                ('asset_added_time', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0, tzinfo=utc))),
             ],
         ),
         migrations.CreateModel(
@@ -28,7 +29,7 @@ class Migration(migrations.Migration):
                 ('feature_uid', models.CharField(max_length=100)),
                 ('feature_version', models.IntegerField(default=0)),
                 ('feature_data', models.TextField()),
-                ('feature_added_time', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0))),
+                ('feature_added_time', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0, tzinfo=utc))),
             ],
         ),
         migrations.CreateModel(
@@ -39,7 +40,7 @@ class Migration(migrations.Migration):
                 ('filter_inclusion', models.BooleanField(default=False, help_text='Exclude: Do not show data that matches this filter.\nInclude: Only show data that matches this filter.', choices=[(False, 'Exclude'), (True, 'Include')])),
                 ('filter_previous', models.BooleanField(default=False, help_text='Selecting this will permenantly remove all points based on the current filter settings.', verbose_name='Filter previous points')),
                 ('filter_previous_status', models.TextField(default='', verbose_name='Filter previous last run')),
-                ('filter_previous_time', models.DateTimeField(default=datetime.datetime(2000, 1, 1, 0, 0))),
+                ('filter_previous_time', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0, tzinfo=utc))),
             ],
         ),
         migrations.CreateModel(

@@ -941,7 +941,7 @@ def upload_to_db(feature_data, table, media_keys, database_alias=None):
     if type(feature_data) != list:
         feature_data = [feature_data]
 
-    if getattr(settings, 'SITENAME', '').lower() in ['exchange', 'geoshape', 'geonode']:
+    if any(app in settings.INSTALLED_APPS for app in ['geoshape', 'geonode', 'exchange']):
         feature_data = prepare_features_for_geonode(feature_data, media_keys=media_keys)
 
     key_name = 'fulcrum_id'

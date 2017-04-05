@@ -1,7 +1,8 @@
 
-from datetime import timedelta
+from django.utils.timezone import timedelta
 import os
 import dj_database_url
+
 try:
     from bex.settings import *
 except ImportError:
@@ -50,6 +51,7 @@ FULCRUM_UPLOAD = os.getenv("FULCRUM_UPLOAD")
 if not FULCRUM_UPLOAD:
     raise Exception("Django_Fulcrum requires an upload directory.")
 FULCRUM_LAYER_PREFIX = os.getenv('FULCRUM_LAYER_PREFIX')
+FULCRUM_CATEGORY_NAME = os.getenv('FULCRUM_CATEGORY_NAME', FULCRUM_LAYER_PREFIX)
 
 S3_CREDENTIALS = [
     # {
@@ -65,9 +67,11 @@ S3_CREDENTIALS = [
 CACHES = locals().get('CACHES', {})
 CACHES['fulcrum'] = {
         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': os.path.abspath(FULCRUM_UPLOAD),
-    }
+        'LOCATION': FULCRUM_UPLOAD,
+}
 
+USE_TZ = locals().get('USE_TZ', True)
+TIME_ZONE = locals().get('TIME_ZONE', 'UTC')
 CELERY_ACCEPT_CONTENT = locals().get('CELERY_ACCEPT_CONTENT', ['json'])
 CELERY_TASK_SERIALIZER = locals().get('CELERY_TASK_SERIALIZER', 'json')
 CELERY_RESULT_SERIALIZER = locals().get('CELERY_RESULT_SERIALIZER', 'json')
@@ -77,19 +81,6 @@ CELERYBEAT_GROUP = locals().get('CELERYBEAT_GROUP', 'geoservice')
 CELERYBEAT_SCHEDULER = locals().get('CELERYBEAT_SCHEDULER', 'djcelery.schedulers.DatabaseScheduler')
 
 CELERYBEAT_SCHEDULE = locals().get('CELERYBEAT_SCHEDULE', {})
-CELERYBEAT_SCHEDULE['Update_layers_30_secs'] = {
-        'task': 'django_fulcrum.tasks.task_update_layers',
-        'schedule': timedelta(seconds=30),
-        'args': None
-    }
-
-CELERYBEAT_SCHEDULE['Pull_s3_data_120_secs'] = {
-        'task': 'django_fulcrum.tasks.pull_s3_data',
-        'schedule': timedelta(seconds=120),
-        'args': None
-    }
-
-USE_TZ = locals().get('USE_TZ', True)
-TIME_ZONE = locals().get('TIME_ZONE', 'UTC')
 CELERY_ENABLE_UTC = locals().get('CELERY_ENABLE_UTC', True)
+FULCRUM_SERVICE_UPDATE_INTERVAL = locals().get('FULCRUM_SERVICE_UPDATE_INTERVAL', 1)
 SSL_VERIFY = locals().get('SSL_VERIFY', False)

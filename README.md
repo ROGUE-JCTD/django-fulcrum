@@ -15,9 +15,17 @@ Once GeoNode or Exchange has been installed, `django_fulcrum/scripts/install.sh`
 
 
 ## Installation
-The `install.sh` file performs steps needed to configure the app with Exchange. The following are the steps performed by the script.  
+The `install.sh` file performs steps needed to configure the app with Boundless Exchange. The following are the steps performed by the script.  
 NOTE: For this app to be functional, you should add at least one of the options: FULCRUM_API_KEYS, FULCRUM_UPLOAD, or S3_CREDENTIALS,
 by default the script will install script will add FULCRUM_UPLOAD to profile.
+```
+yum install -y git 
+git clone https://github.com/terranodo/eventkit-cloud
+cd eventkit-cloud
+./install.sh
+cd -
+```
+
 
 ##### DATABASES: (Required)
 A database in which the geospatial data can be stored. 

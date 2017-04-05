@@ -21,6 +21,8 @@ from __future__ import absolute_import
 from django.conf import settings
 from django.core.cache import caches
 from celery import shared_task
+from celery.task import periodic_task
+from celery.schedules import crontab
 from hashlib import md5
 from .s3_downloader import pull_all_s3_data
 from .models import FulcrumApiKey
@@ -51,8 +53,11 @@ def update_geonode_layers(**kwargs):
 
     if acquire_lock(get_lock_id(geonode_layer), 30):
         return gs_slurp(**kwargs)
+    else:
+        logger.error("Called update_geonode_layers twice for the same layer.")
 
-@shared_task(name="django_fulcrum.tasks.task_update_layers")
+
+@periodic_task(name="django_fulcrum.tasks.task_update_layers", run_every=crontab(minute=getattr(settings, 'FULCRUM_SERVICE_UPDATE_INTERVAL', 1)))
 def task_update_layers():
 
     from .django_fulcrum import DjangoFulcrum
@@ -95,7 +100,7 @@ def task_update_layers():
             release_lock(lock_id)
 
 
-@shared_task(name="django_fulcrum.tasks.pull_s3_data")
+@periodic_task(name="django_fulcrum.tasks.pull_s3_data", run_every=crontab(minute=getattr(settings, 'FULCRUM_SERVICE_UPDATE_INTERVAL', 1)))
 def pull_s3_data():
     if not check_filters():
         return False

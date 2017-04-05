@@ -1,6 +1,7 @@
 include readme.md
 include install.sh
 include uninstall.sh
+include LICENSE
 recursive-include django_fulcrum/filters/boundary_polygons *.geojson
 recursive-include django_fulcrum/static *
 recursive-include django_fulcrum/templates *
