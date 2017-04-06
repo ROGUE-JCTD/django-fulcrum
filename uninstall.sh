@@ -13,12 +13,12 @@ then
 FULCRUM_STORE=/opt/geonode/geoserver_data/fulcrum_data
 EXCHANGE_SETTINGS=/etc/profile.d/exchange-settings.sh
 EXCHANGE_DIR=/opt/boundless/exchange/
-BEX_SETTINGS=/opt/boundless/exchange/bex/settings.py
-EXCHANGE_URLS=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/exchange/urls.py
-PIP=/opt/boundless/exchange/.venv/bin/pip
-PYTHON=/opt/boundless/exchange/.venv/bin/python
-MANAGE=/opt/boundless/exchange/manage.py
-CELERY_BEAT_SCRIPT=/opt/boundless/exchange/celery-beat.sh
+BEX_SETTINGS=$EXCHANGE_DIR/bex/settings.py
+EXCHANGE_URLS=$EXCHANGE_DIR/.venv/lib/python2.7/site-packages/exchange/urls.py
+PIP=$EXCHANGE_DIR/.venv/bin/pip
+PYTHON=$EXCHANGE_DIR/.venv/bin/python
+MANAGE=$EXCHANGE_DIR/manage.py
+CELERY_BEAT_SCRIPT=$EXCHANGE_DIR/celery-beat.sh
 
 grep FULCRUM_UPLOAD $EXCHANGE_SETTINGS && \
 sed -i -e "s|export FULCRUM_UPLOAD=.*$||" $EXCHANGE_SETTINGS
@@ -65,13 +65,14 @@ django_fulcrum_tables = ['django_fulcrum_asset',
                         'django_fulcrum_s3sync',
                         'django_fulcrum_textfilter']
 
-command_template = Template("DROP TABLE $tables CASCADE;")
+command_template = Template("DROP TABLE \$tables CASCADE;")
 with connection.cursor() as cursor:
     try:
         command = command_template.safe_substitute({'tables': ','.join(django_fulcrum_tables)})
         cursor.execute(command)
-    except ProgrammingError:
-        pass
+        print("Removed the django_fulcrum tables.")
+    except ProgrammingError as error:
+        print(error)
 END
 cd -
 

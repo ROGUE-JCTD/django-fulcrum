@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# exit on any error
 set -e
 
 if [ "$EUID" -ne 0 ]
@@ -7,20 +6,18 @@ if [ "$EUID" -ne 0 ]
   exit
 fi
 
-FILE_SERVICE_STORE=/opt/boundless/exchange/.storage/media/fileservice
+EXCHANGE_DIR=/opt/boundless/exchange
+FILE_SERVICE_STORE=$EXCHANGE_DIR/.storage/media/fileservice
 FULCRUM_STORE=/opt/geonode/geoserver_data/fulcrum_data
 EXCHANGE_SETTINGS=/etc/profile.d/exchange-settings.sh
-EXCHANGE_DIR=/opt/boundless/exchange/
-BEX_SETTINGS=/opt/boundless/exchange/bex/settings.py
-EXCHANGE_URLS=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/exchange/urls.py
-EXCHANGE_CELERY_APP=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/exchange/celery_app.py
-PIP=/opt/boundless/exchange/.venv/bin/pip
-PYTHON=/opt/boundless/exchange/.venv/bin/python
-GEONODE_LAYERS_MODELS=/opt/boundless/exchange/.venv/lib/python2.7/site-packages/geonode/layers/models.py
-MANAGE=/opt/boundless/exchange/manage.py
-CELERY_BEAT_SCRIPT=/opt/boundless/exchange/celery-beat.sh
-
-source $EXCHANGE_SETTINGS
+BEX_SETTINGS=$EXCHANGE_DIR/bex/settings.py
+EXCHANGE_URLS=$EXCHANGE_DIR/.venv/lib/python2.7/site-packages/exchange/urls.py
+EXCHANGE_CELERY_APP=$EXCHANGE_DIR/.venv/lib/python2.7/site-packages/exchange/celery_app.py
+PIP=$EXCHANGE_DIR/.venv/bin/pip
+PYTHON=$EXCHANGE_DIR/.venv/bin/python
+GEONODE_LAYERS_MODELS=$EXCHANGE_DIR/.venv/lib/python2.7/site-packages/geonode/layers/models.py
+MANAGE=$EXCHANGE_DIR/manage.py
+CELERY_BEAT_SCRIPT=$EXCHANGE_DIR/celery-beat.sh
 
 grep FULCRUM_UPLOAD $EXCHANGE_SETTINGS && \
 sed -i -e "s|export FULCRUM_UPLOAD=.*$|export FULCRUM_UPLOAD=\$\{FULCRUM_STORE\:\-'$FULCRUM_STORE'\}|" $EXCHANGE_SETTINGS || \
@@ -30,7 +27,9 @@ grep FILE_SERVICE_STORE $EXCHANGE_SETTINGS && \
 sed -i -e "s|export FILE_SERVICE_STORE=.*$|export FILE_SERVICE_STORE=\$\{FILE_SERVICE_STORE\:\-'$FILE_SERVICE_STORE'\}|" $EXCHANGE_SETTINGS || \
 sed -i -e "s|set +e|export FILE_SERVICE_STORE=\$\{FILE_SERVICE_STORE\:\-'$FILE_SERVICE_STORE'\}\nset +e|" $EXCHANGE_SETTINGS
 
-$PIP uninstall -y django_fulcrum
+$PIP uninstall -y django_fulcrum && \
+echo 'Previous version of the application has been uninstalled.' || \
+echo 'The application has not been installed previously, starting new install.'
 $PIP install  -e ./
 
 mkdir -p $FULCRUM_STORE
@@ -61,10 +60,10 @@ cat << END > $CELERY_BEAT_SCRIPT
 
 source /etc/profile.d/exchange-settings.sh
 source /etc/profile.d/vendor-libs.sh
-cd /opt/boundless/exchange
+cd ${EXCHANGE_DIR}
 source .venv/bin/activate
 
-/opt/boundless/exchange/.venv/bin/celery beat --app=exchange.celery_app --uid=exchange --loglevel=info --workdir=/opt/boundless/exchange
+${EXCHANGE_DIR}/.venv/bin/celery beat --app=exchange.celery_app --uid=exchange --loglevel=info --workdir=${EXCHANGE_DIR}
 END
 
 chown exchange:geoservice $CELERY_BEAT_SCRIPT
@@ -72,7 +71,9 @@ chmod 775 $CELERY_BEAT_SCRIPT
 
 fi
 
-#add to /etc/supervisord.conf and fix duplicate layer bug in geonode
+source $EXCHANGE_SETTINGS
+export EXCHANGE_DIR=$EXCHANGE_DIR
+# add to /etc/supervisord.conf and fix duplicate layer bug in geonode
 cd $EXCHANGE_DIR
 $PYTHON -  << END
 import ConfigParser
@@ -85,14 +86,17 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'bex.settings'
 django.setup()
 
 from django.db import connection
-from django.db.utils import ProgrammingError
+from django.db.utils import ProgrammingError, IntegrityError
 
+EXCHANGE_DIR = os.getenv('EXCHANGE_DIR')
+
+# Add celerybeat to supervisor.d
 
 config_file = '/etc/supervisord.conf'
 config = ConfigParser.SafeConfigParser()
 config.read(config_file)
 program = 'celery-beat'
-program_configuration = {"command": "/opt/boundless/exchange/celery-beat.sh",
+program_configuration = {"command": os.path.join(EXCHANGE_DIR, "celery-beat.sh"),
                         "stdout_logfile": "/var/log/celery/celery-beat-stdout.log",
                         "stderr_logfile": "/var/log/celery/celery-beat-stderr.log",
                         "autostart": "true",
@@ -108,15 +112,18 @@ for key,value in program_configuration.iteritems():
     config.set(program_section, key, value)
 with open(config_file, 'wb') as configfile:
     config.write(configfile)
-
+    print("Added celerybeat to config")
+# Add constraint to tables
 geonode_layers_table = 'layers_layer'
-command_template = Template("ALTER TABLE $table_name ADD CONSTRAINT store_name_key UNIQUE (store, name);")
+command_template = Template("ALTER TABLE \$table_name ADD CONSTRAINT store_name_key UNIQUE (store, name);")
 with connection.cursor() as cursor:
     try:
         command = command_template.safe_substitute({'table_name': geonode_layers_table})
         cursor.execute(command)
-    except ProgrammingError:
-        pass
+        print("Added unique constaint to layers_layer for store and name.")
+    except (ProgrammingError, IntegrityError) as error:
+        print("Database unique constaint was already added to layers_layer for store and name.")
+        print(error)
 
 from geonode.base.models import TopicCategory
 topic = TopicCategory.objects.get_or_create(gn_description='Fulcrum',
@@ -124,18 +131,15 @@ topic = TopicCategory.objects.get_or_create(gn_description='Fulcrum',
                                             is_choice=True,
                                             fa_class='fa-user-circle-o',
                                             identifier='fulcrum')
+print("Added Fulcrum Category")
 END
-cd -
+# select * from information_schema.table_constraints where table_name='layers_layer';
 
-source $EXCHANGE_SETTINGS
+cd -
 
 $PYTHON $MANAGE collectstatic --noinput
 $PYTHON $MANAGE loaddata django_fulcrum/fixtures/topic.json
 $PYTHON $MANAGE migrate
-
-## django celery migration problem
-#$PYTHON $MANAGE migrate djcelery 0001 --fake
-#$PYTHON $MANAGE migrate djcelery
 
 service exchange restart
 

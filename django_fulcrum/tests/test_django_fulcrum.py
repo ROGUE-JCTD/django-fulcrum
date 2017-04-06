@@ -479,15 +479,6 @@ class DjangoFulcrumTests(TestCase):
         coords2 = get_gps_coords(properties2)
         self.assertEqual([38.889775, -77.456342], coords2)
 
-    # def test_create_geogig_repo(self):
-    #     new_repo = 'test_repo'
-    #     repos = get_all_geogig_repos()
-    #     for repo in repos:
-    #         print repo
-    #         # create_geogig_repo(new_repo)
-    #         # repo = get_geogig_repo(new_repo)
-    #         # self.assertEqual(new_repo,repo)
-
 
 class DjangoFulcrumDBTests(TransactionTestCase):
     """Test cases for model functions to prevent locking issues due to transactions."""
