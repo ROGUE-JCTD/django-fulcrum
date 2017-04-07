@@ -242,13 +242,13 @@ class DjangoFulcrum:
                                                     record.get('latitude')]
                                     }}
             properties = {}
-            for key in record:
-                if key == 'form_values':
+            for record_index in record:
+                if record_index == 'form_values':
                     properties.update(self.form_values_to_properties(record.get('form_values'),
                                                                      element_map,
                                                                      media_map))
                 else:
-                    properties[key] = record[key]
+                    properties[record_index] = record[record_index]
             feature['properties'] = properties
             features += [feature]
         geojson = {"type": "FeatureCollection", "features": features}
