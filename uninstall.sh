@@ -39,19 +39,25 @@ from django.db.utils import ProgrammingError
 from djcelery.models import PeriodicTask
 try:
     PeriodicTask.objects.get(name='django_fulcrum.tasks.task_update_layers').delete()
-except PeriodicTask.DoesNotExist:
-    pass
+    print("Successfully removed PeriodicTask: django_fulcrum.tasks.task_update_layers")
+except PeriodicTask.DoesNotExist as e:
+    print("Unable to remove PeriodicTask: django_fulcrum.tasks.task_update_layers")
+    print(e)
 
 try:
     PeriodicTask.objects.get(name='django_fulcrum.tasks.pull_s3_data').delete()
-except PeriodicTask.DoesNotExist:
-    pass
+    print("Successfully removed PeriodicTask: django_fulcrum.tasks.pull_s3_data")
+except PeriodicTask.DoesNotExist as e:
+    print("Unable to remove PeriodicTask: django_fulcrum.tasks.pull_s3_data")
+    print(e)
 
 from geonode.base.models import TopicCategory
 try:
     TopicCategory.objects.get(gn_description='Fulcrum').delete()
-except PeriodicTask.DoesNotExist:
-    pass
+    print("Successfully removed TopicCategory: Fulcrum")
+except TopicCategory.DoesNotExist as e:
+    print("Unable to remove TopicCategory: Fulcrum")
+    print(e)
 
 django_fulcrum_tables = ['django_fulcrum_asset',
                         'django_fulcrum_feature',
