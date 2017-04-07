@@ -15,11 +15,13 @@
 from __future__ import unicode_literals, absolute_import
 
 from django.apps import AppConfig
-from django.core.cache import cache
+from django.core.cache import caches
 from hashlib import md5
 from sys import exit, exc_info
 from multiprocessing import current_process
+import logging
 
+logger = logging.getLogger(__file__)
 
 class DjangoFulcrumConfig(AppConfig):
     name = 'django_fulcrum'
@@ -34,52 +36,52 @@ class DjangoFulcrumConfig(AppConfig):
             if not current_process().daemon:
                 test_lock, test_read = test_cache()
                 if not test_lock:
-                    print("Unable to securely write to cache.")
-                    print("Please ensure you have a process safe cache installed, configured, and running.")
+                    logger.error("Unable to securely write to cache.")
+                    logger.error("Please ensure you have a process safe cache installed, configured, and running.")
                     exit(1)
                 if not test_read:
-                    print("Unable to read/write to cache.")
-                    print("Please ensure you have a process safe cache installed, configured, and running.")
+                    logger.error("Unable to read/write to cache.")
+                    logger.error("Please ensure you have a process safe cache installed, configured, and running.")
                     exit(1)
                 if not getattr(settings, 'DJANGO_FULCRUM_USE_CELERY', True):
-                    print("Running django_fulcrum without celery...")
+                    logger.error("Running django_fulcrum without celery...")
                     from .fulcrum_task_runner import FulcrumTaskRunner
                     runner = FulcrumTaskRunner()
                     runner.start(interval=30)
-                    print("Server loaded.")
+                    logger.error("Server loaded.")
             check_filters()
         except OperationalError:
-            print("Data has not yet been migrated.")
+            logging.warn("Data has not yet been migrated.")
             return
         except AppRegistryNotReady:
-            print("Apps not yet loaded.")
+            logger.error("Apps not yet loaded.")
             exit(1)
         except:
-            print("Unknown Error: ", exc_info())
+            logger.error("Unknown Error: ", exc_info())
             return
 
 
 def test_cache():
     from multiprocessing import Process
     lock_id = get_lock_id('lock_id')
-    cache.delete(lock_id)
+    caches['fulcrum'].delete(lock_id)
     p = Process(target=create_lock, args=(lock_id,))
     p.start()
     p.join()
-    if cache.add(lock_id, "true", 1):
+    if caches['fulcrum'].add(lock_id, "true", 1):
         lock_test = False
     else:
         lock_test = True
-    if cache.get(lock_id) == 'true':
+    if caches['fulcrum'].get(lock_id) == 'true':
         cache_test = True
     else:
         cache_test = False
-    cache.delete(lock_id)
+    caches['fulcrum'].delete(lock_id)
     return lock_test, cache_test
 
 
 def create_lock(lock_id):
-    cache.add(lock_id, "true", 20)
+    caches['fulcrum'].add(lock_id, "true", 20)
 
 
 def get_lock_id(lock_name):

@@ -21,8 +21,9 @@ from django.utils import timezone
 import os
 import json
 from datetime import datetime, timedelta
+import pytz
 
-if getattr(settings, 'SITENAME', '').lower() == 'exchange':
+if any(app in settings.INSTALLED_APPS for app in ['geoshape', 'geonode', 'exchange']):
     fulcrum_media_dir = getattr(settings, 'FILESERVICE_CONFIG', {}).get('store_dir')
 else:
     fulcrum_media_dir = getattr(settings, 'MEDIA_ROOT', None)
@@ -44,12 +45,17 @@ def get_media_dir():
     return fulcrum_media_dir
 
 
+def get_base_url():
+    if getattr(settings, 'FILESERVICE_CONFIG', {}).get('store_dir'):
+        return '/api/fileservice/view/'
+
+
 def get_data_dir():
     return fulcrum_data_dir
 
 
 def default_datetime():
-    return datetime(1, 1, 1, 0, 0, 0)
+    return datetime(1, 1, 1, 0, 0, 0, 0, pytz.UTC)
 
 
 def get_asset_name(instance, *args):
@@ -101,7 +107,6 @@ def get_all_features(after_time_added=None):
 
 
 class CustomStorage(FileSystemStorage):
-
     def get_available_name(self, name):
         return name
 
@@ -115,8 +120,9 @@ class Asset(models.Model):
     """Structure to hold file locations."""
     asset_uid = models.CharField(max_length=100, primary_key=True)
     asset_type = models.CharField(max_length=100)
-    asset_data = models.FileField(storage=CustomStorage(location=get_media_dir()), upload_to=get_asset_name)
-    asset_added_time = models.DateTimeField(default=timezone.now())
+    asset_data = models.FileField(storage=CustomStorage(location=get_media_dir(), base_url=get_base_url()),
+                                  upload_to=get_asset_name)
+    asset_added_time = models.DateTimeField(default=default_datetime())
 
     def delete(self, *args, **kwargs):
         super(Asset, self).delete(*args, **kwargs)
@@ -140,7 +146,7 @@ class Feature(models.Model):
     feature_version = models.IntegerField(default=0)
     layer = models.ForeignKey(Layer, on_delete=models.CASCADE, default="")
     feature_data = models.TextField()
-    feature_added_time = models.DateTimeField(default=timezone.now())
+    feature_added_time = models.DateTimeField(default=default_datetime())
 
     class Meta:
         unique_together = (("feature_uid", "feature_version"),)
@@ -180,10 +186,6 @@ class FulcrumApiKey(models.Model):
         return self.fulcrum_api_description
 
 
-def get_init_time():
-    return datetime(1, 1, 1)
-
-
 class Filter(models.Model):
     """Structure to hold knowledge of filters in the filter package."""
     INCLUSION = (
@@ -201,7 +203,7 @@ class Filter(models.Model):
                                           help_text="Selecting this will permenantly remove all points based on the current"
                                                     " filter settings.")
     filter_previous_status = models.TextField(verbose_name="Filter previous last run", default="")
-    filter_previous_time = models.DateTimeField(default=get_init_time())
+    filter_previous_time = models.DateTimeField(default=default_datetime())
 
     __filter_inclusion = None
 
@@ -225,7 +227,7 @@ class Filter(models.Model):
     def save(self, *args, **kwargs):
 
         if self.filter_inclusion != self.__filter_inclusion:
-            self.filter_previous_time = get_init_time()
+            self.filter_previous_time = default_datetime()
         self.__filter_inclusion = self.filter_inclusion
 
         if not self.is_filter_running():
@@ -242,7 +244,7 @@ class Filter(models.Model):
             if getattr(settings, 'DJANGO_FULCRUM_USE_CELERY', True):
                 task_filter_features.apply_async(kwargs={'filter_name': self.filter_name,
                                                          'features': get_all_features(
-                                                                 after_time_added=self.filter_previous_time),
+                                                             after_time_added=self.filter_previous_time),
                                                          'run_once': True,
                                                          'run_time': run_time})
                 task_filter_assets.apply_async(kwargs={'filter_name': self.filter_name,
@@ -311,9 +313,9 @@ class FilterArea(FilterGeneric):
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         if (self.filter_area_buffer != self.__filter_area_buffer or
-                self.filter_area_data != self.__filter_area_data or
+                    self.filter_area_data != self.__filter_area_data or
                 not self.pk):
-            self.filter.filter_previous_time = get_init_time()
+            self.filter.filter_previous_time = default_datetime()
             self.filter.save()
         super(FilterArea, self).save(force_insert, force_update, *args, **kwargs)
         self.__filter_area_buffer = self.filter_area_buffer

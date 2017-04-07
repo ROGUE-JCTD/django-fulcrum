@@ -4,7 +4,9 @@ import os
 from importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.db import OperationalError
+import logging
 
+logger = logging.getLogger(__file__)
 
 def filter_features(features, filter_name=None, run_once=False):
     """
@@ -43,42 +45,43 @@ def filter_features(features, filter_name=None, run_once=False):
                             mod = import_module(module_name)
                             filtered_results = mod.filter_features(features)
                         except ImportError:
-                            print "Could not filter features - ImportError"
+                            logging.error("Could not filter features - ImportError")
                         except TypeError as te:
-                            print te
-                            print "Could not filter features - TypeError"
+                            logging.error(te)
+                            logging.error("Could not filter features - TypeError")
                         except Exception as e:
-                            "Unknown error occurred, could not filter features"
-                            print repr(e)
+                            logging.error("Unknown error occurred, could not filter features")
+                            logging.error(repr(e))
                         if filtered_results:
                             if filtered_results.get('failed').get('features'):
                                 for feature in filtered_results.get('failed').get('features'):
                                     if run_once:
                                         delete_feature(feature.get('properties').get('fulcrum_id'))
-                                print "{} features failed the filter".format(
-                                        len(filtered_results.get('failed').get('features')))
+                                logging.warn("{} features failed the filter".format(
+                                        len(filtered_results.get('failed').get('features'))))
                             if filtered_results.get('passed').get('features'):
-                                print "{} features passed the filter".format(
-                                        len(filtered_results.get('passed').get('features')))
+                                logging.info("{} features passed the filter".format(
+                                        len(filtered_results.get('passed').get('features'))))
                                 features = filtered_results.get('passed')
                                 filtered_feature_count = len(filtered_results.get('passed').get('features'))
                             else:
                                 features = None
                                 filtered_feature_count = 0
                         else:
-                            print "Failure to get filtered results"
+                            logging.error("Failure to get filtered results")
                 else:
                     un_needed.append(filter_model)
             if un_needed:
                 for filter_model in un_needed:
-                    print("The filter {} was found in the database but the module is "
+                    logging.error("The filter {} was found in the database but the module is "
                           "missing.".format(filter_model.filter_name))
-                    print("It will be disabled.  If the module is installed later, reenable the filter "
+                    logging.error("It will be disabled.  If the module is installed later, reenable the filter "
                           "in the admin console.")
                     filter_model.filter_active = False
     else:
         features = None
         filtered_feature_count = 0
+    logger.debug("returning {0} features".format(filtered_feature_count))
     return features, filtered_feature_count
 
 
@@ -90,15 +93,14 @@ def check_filters():
     Sets cache value so function will not running fully every time it is called by tasks.py
     """
     from ..models import Filter
-    from ..tasks import get_lock_id
+    from ..tasks import get_lock, set_lock, get_lock_id
     from django.db import IntegrityError
     from importlib import import_module
-    from django.core.cache import cache
     workspace = os.path.dirname(os.path.abspath(__file__))
     files = os.listdir(workspace)
     if files:
         lock_id = get_lock_id('list-filters-success')
-        if cache.get(lock_id):
+        if get_lock(lock_id):
             return True
         if not check_init():
             return False
@@ -110,7 +112,7 @@ def check_filters():
                     filter_names = Filter.objects.filter(filter_name__iexact=filter_file)
                     if not filter_names.exists():
                         filter_model = Filter.objects.create(filter_name=filter_file)
-                        print ("Created filter {}".format(filter_model.filter_name))
+                        logging.info("Created filter {}".format(filter_model.filter_name))
                 except IntegrityError:
                     return False
                 try:
@@ -120,7 +122,7 @@ def check_filters():
                             return False
                 except ImportError:
                     return False
-        cache.set(lock_id, True, 20)
+        set_lock(lock_id, True, 20)
     return True
 
 

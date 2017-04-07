@@ -19,7 +19,9 @@ from .models import S3Credential, S3Bucket, FulcrumApiKey, Filter, FilterGeneric
 from django.contrib import messages
 from django.contrib.admin import helpers
 from django.template.response import TemplateResponse
+import logging
 
+logger = logging.getLogger(__file__)
 
 class S3BucketInline(admin.TabularInline):
     model = S3Bucket
@@ -130,9 +132,9 @@ class FilterAdmin(admin.ModelAdmin):
             elif request.POST.get('post') and request.POST.get('post') == 'Yes':
                 super(FilterAdmin, self).save_model(request, obj, form, change)
             elif request.POST.get('post') and request.POST.get('post') == 'No':
-                print "You did not confirm, not saving model"
+                messages.info("No confirmation, not saving model")
             else:
-                print "Waiting for confirmation"
+                messages.info("Waiting for confirmation")
 
     def save_formset(self, request, form, formset, change):
         if request.POST.get('post') and request.POST.get('post') == 'Yes':
@@ -145,7 +147,7 @@ class FilterAdmin(admin.ModelAdmin):
         from django.utils.text import get_text_list
         from django.utils.translation import ugettext as _
         if (request.POST.get('post') and request.POST.get('post') == 'Yes') or not request.POST.get('filter_previous'):
-            print "Creating change message"
+            logger.debug("Creating change message")
             change_message = []
             if add:
                 change_message.append(_('Added.'))
@@ -173,7 +175,7 @@ class FilterAdmin(admin.ModelAdmin):
             change_message = ' '.join(change_message)
             return change_message or _('No fields changed.')
         else:
-            print "Not creating change message"
+            logger.debug("Not creating change message")
             return _('No fields changed.')
 
     def get_inline_instances(self, request, obj=None):

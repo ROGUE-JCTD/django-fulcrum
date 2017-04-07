@@ -7,9 +7,7 @@ fulcrum/*
 .idea
 *.pyc
 mvp_app/*
-django_fulcrum/migrations/*
 temp.json
-settings.py
 local_settings.py
 celery.log
 celerybeat.pid
@@ -26,3 +24,6 @@ build/
 init.py*
 manage.py
 *~
+*.egg-info
+*.djcache
+dist

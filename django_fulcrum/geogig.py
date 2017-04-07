@@ -9,6 +9,9 @@ import subprocess
 import shutil
 import sys
 import geogigpy
+import logging
+
+logger = logging.getLogger(__file__)
 
 
 def create_geogig_datastore(store_name):
@@ -28,7 +31,7 @@ def create_geogig_datastore(store_name):
     workspace = cat.get_workspace(workspace_name)
     if workspace is None:
         cat.create_workspace(workspace_name, workspace_uri)
-        print "Workspace " + workspace_name + " created."
+        logging.info("Workspace " + workspace_name + " created.")
 
     # Get list of datastores
     datastores = cat.get_stores()
@@ -53,7 +56,7 @@ def create_geogig_repo(repo_name,
     if not os.path.exists(repo_dir):
         os.mkdir(repo_dir)
     if os.path.exists(os.path.join(repo_dir,'.geogig')):
-        print("Cannot create new geogig repo {}, because one already exists.".format(repo_name))
+        logger.warn("Cannot create new geogig repo {}, because one already exists.".format(repo_name))
         return repo_dir
     prev_dir = os.getcwd()
     os.chdir(os.path.dirname(repo_dir))
@@ -135,7 +138,7 @@ def get_geogig_base_url():
 
     ogc_server = get_ogc_server()
     if not site_url or not ogc_server:
-        print("Could not find site_url or ogc_server.")
+        logger.error("Could not find site_url or ogc_server.")
         return
 
     return '{}/geogig'.format((ogc_server.get('LOCATION') or site_url).strip('/'))
@@ -183,8 +186,8 @@ def send_wfs(xml=None, url=None):
     csrftoken = client.cookies['csrftoken']
     login_data = dict(username='admin', password='geoshape', csrfmiddlewaretoken=csrftoken)
     client_resp = client.post(URL, data=login_data, headers=dict(Referer=URL), verify=False)
-    print("login reponse:{}".format(client_resp.status_code))
-    print("login reponse:{}".format(str(client_resp.headers)))
+    logger.info("login reponse:{}".format(client_resp.status_code))
+    logger.info("login reponse:{}".format(str(client_resp.headers)))
     url = "https://geoshape.dev/proxy/"
     params = {"url": "https://geoshape.dev/geoserver/wfs/WfsDispatcher"}
     headers = {'Referer': "https://geoshape.dev/maploom/maps/new?layer=geonode%3Afulcrum_starbucks",
@@ -192,10 +195,10 @@ def send_wfs(xml=None, url=None):
                'Authorization': ""}
     data = geojson_to_wfs()
     response = client.post(url, data=data, headers=headers, params=params, verify=False)
-    print(response.status_code)
-    print(str(response.headers))
-    print(str(response.request.headers))
-    print(str(client.cookies))
+    logger.debug(response.status_code)
+    logger.debug(str(response.headers))
+    logger.debug(str(response.request.headers))
+    logger.debug(str(client.cookies))
     body = handle_double_zip(response)
     with open('/var/lib/geonode/fulcrum_data/output.html','wb') as out_html:
         out_html.write(body.encode('utf-8'))

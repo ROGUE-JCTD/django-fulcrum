@@ -453,7 +453,7 @@ class DjangoFulcrumTests(TestCase):
             }
         }
 
-        returned_features = prepare_features_for_geoshape(test_feature, media_keys=media_keys)
+        returned_features = prepare_features_for_geonode(test_feature, media_keys=media_keys)
         self.assertEqual(expected_feature, returned_features[0])
 
     def test_is_valid_photo(self):

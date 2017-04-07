@@ -3,7 +3,9 @@ import json
 import copy
 import re
 from django.db import transaction
+import logging
 
+logger = logging.getLogger(__file__)
 
 def filter_features(input_features, **kwargs):
     """
@@ -17,7 +19,7 @@ def filter_features(input_features, **kwargs):
         if input_features.get("features"):
             return iterate_geojson(input_features, **kwargs)
     else:
-        print("The input_features are in a format {}, "
+        logger.error("The input_features are in a format {}, "
               "which is not compatible with filter_features. Should be dict.".format(type(input_features)))
         return None
 
@@ -38,13 +40,13 @@ def iterate_geojson(input_features, filter_inclusion=None):
         try:
             text_filter = Filter.objects.get(filter_name__iexact='us_phone_number_filter.py')
         except ObjectDoesNotExist:
-            print("The phone number filter was not imported.")
+            logger.error("The phone number filter was not imported.")
             return
         try:
             phone_number_filter = TextFilter.objects.get(filter=text_filter)
             filter_inclusion = phone_number_filter.filter.filter_inclusion
         except IntegrityError:
-            print("The text filter was not created.")
+            logger.error("The text filter was not created.")
             return
     passed = []
     failed = []
