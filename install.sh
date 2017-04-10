@@ -19,13 +19,18 @@ GEONODE_LAYERS_MODELS=$EXCHANGE_DIR/.venv/lib/python2.7/site-packages/geonode/la
 MANAGE=$EXCHANGE_DIR/manage.py
 CELERY_BEAT_SCRIPT=$EXCHANGE_DIR/celery-beat.sh
 
-grep FULCRUM_UPLOAD $EXCHANGE_SETTINGS && \
-sed -i -e "s|export FULCRUM_UPLOAD=.*$|export FULCRUM_UPLOAD=\$\{FULCRUM_STORE\:\-'$FULCRUM_STORE'\}|" $EXCHANGE_SETTINGS || \
-sed -i -e "s|set +e|export FULCRUM_UPLOAD=\$\{FULCRUM_UPLOAD\:\-'$FULCRUM_STORE'\}\nset +e|" $EXCHANGE_SETTINGS
 
 grep FILE_SERVICE_STORE $EXCHANGE_SETTINGS && \
 sed -i -e "s|export FILE_SERVICE_STORE=.*$|export FILE_SERVICE_STORE=\$\{FILE_SERVICE_STORE\:\-'$FILE_SERVICE_STORE'\}|" $EXCHANGE_SETTINGS || \
 sed -i -e "s|set +e|export FILE_SERVICE_STORE=\$\{FILE_SERVICE_STORE\:\-'$FILE_SERVICE_STORE'\}\nset +e|" $EXCHANGE_SETTINGS
+
+grep FULCRUM_UPLOAD $EXCHANGE_SETTINGS && \
+sed -i -e "s|export FULCRUM_UPLOAD=.*$|export FULCRUM_UPLOAD=\$\{FULCRUM_STORE\:\-'$FULCRUM_STORE'\}|" $EXCHANGE_SETTINGS || \
+sed -i -e "s|set +e|export FULCRUM_UPLOAD=\$\{FULCRUM_UPLOAD\:\-'$FULCRUM_STORE'\}\nset +e|" $EXCHANGE_SETTINGS
+
+grep 'DJANGO_SETTINGS_MODULE' $EXCHANGE_SETTINGS && \
+sed -i -e "s|export DJANGO_SETTINGS_MODULE=.*$|export DJANGO_SETTINGS_MODULE=\$\{DJANGO_SETTINGS_MODULE\:\-'bex.settings'\}|" $EXCHANGE_SETTINGS || \
+sed -i -e "s|set +e|export DJANGO_SETTINGS_MODULE=\$\{DJANGO_SETTINGS_MODULE\:\-'bex.settings'\}\nset +e|" $EXCHANGE_SETTINGS
 
 $PIP uninstall -y django_fulcrum && \
 echo 'Previous version of the application has been uninstalled.' || \
