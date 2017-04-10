@@ -59,28 +59,10 @@ except TopicCategory.DoesNotExist as e:
     print("Unable to remove TopicCategory: Fulcrum")
     print(e)
 
-django_fulcrum_tables = ['django_fulcrum_asset',
-                        'django_fulcrum_feature',
-                        'django_fulcrum_filter',
-                        'django_fulcrum_filterarea',
-                        'django_fulcrum_filtergeneric',
-                        'django_fulcrum_fulcrumapikey',
-                        'django_fulcrum_layer',
-                        'django_fulcrum_s3bucket',
-                        'django_fulcrum_s3credential',
-                        'django_fulcrum_s3sync',
-                        'django_fulcrum_textfilter']
-
-command_template = Template("DROP TABLE \$tables CASCADE;")
-with connection.cursor() as cursor:
-    try:
-        command = command_template.safe_substitute({'tables': ','.join(django_fulcrum_tables)})
-        cursor.execute(command)
-        print("Removed the django_fulcrum tables.")
-    except ProgrammingError as error:
-        print(error)
 END
 cd -
+
+$PYTHON $MANAGE migrate django_fulcrum zero
 
 $PIP uninstall -y django_fulcrum
 
