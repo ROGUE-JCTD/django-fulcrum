@@ -1607,12 +1607,12 @@ def publish_layer(layer_name, geoserver_base_url=None, database_alias=None):
         cat.save(datastore)
 
     # Check if remote layer already exists on local system
-    layers = cat.get_layers()
+    layer = cat.get_layer(layer_name)
 
-    layer = None
-    for lyr in layers:
-        if lyr.resource.name.lower() == layer_name.lower():
-            layer = lyr
+    # layer = None
+    # for lyr in layers:
+    #     if lyr.resource.name.lower() == layer_name.lower():
+    #         layer = lyr
 
     if not layer:
         # Publish remote layer

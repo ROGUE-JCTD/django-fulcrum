@@ -23,15 +23,15 @@ from django.core.cache import caches
 from celery import shared_task
 from celery.task import periodic_task
 from celery.schedules import crontab
+from celery.utils.log import get_task_logger
 from hashlib import md5
 from .s3_downloader import pull_all_s3_data
 from .models import FulcrumApiKey
 from .filters.run_filters import check_filters
 from fulcrum.exceptions import UnauthorizedException
 import time
-import logging
 
-logger = logging.getLogger(__file__)
+logger = get_task_logger(__file__)
 
 
 @shared_task(name="django_fulcrum.tasks.update_geonode_layers")
@@ -41,18 +41,27 @@ def update_geonode_layers(**kwargs):
     """
     from geonode.geoserver.helpers import gs_slurp
     from geonode.people.models import Profile
+    from geonode.layers.models import Layer
+    from geonode.base.models import TopicCategory
 
     owner = kwargs.get('owner')
 
     if owner and not isinstance(owner, Profile):
         kwargs['owner'] = Profile.objects.get(username=owner)
 
-    geonode_layer = "{0}:{1}".format(kwargs.get("workspace"), kwargs.get("filter"))
+    store = kwargs.get("store")
+    name = kwargs.get("filter")
+    geonode_layer = "{0}:{1}".format(store, name)
 
-    logger.debug("UPDATING GEONODE LAYERS FOR {0}".format(geonode_layer))
+    logger.info("Updating geonode layer {0}".format(geonode_layer))
 
     if acquire_lock(get_lock_id(geonode_layer), 30):
-        return gs_slurp(**kwargs)
+        output = gs_slurp(**kwargs)
+        if output:
+            layer = Layer.objects.get(store=store, name=name)
+            layer.constraints_other_en = getattr(settings, "FULCRUM_GEONODE_RESTRICTIONS")
+            layer.category = TopicCategory.objects.get(gn_description=getattr(settings, "FULCRUM_CATEGORY_NAME"))
+            layer.save()
     else:
         logger.error("Called update_geonode_layers twice for the same layer.")
 
@@ -75,7 +84,7 @@ def task_update_layers():
         fulcrum_api_keys += [api_key.fulcrum_api_key]
 
     if not fulcrum_api_keys:
-        logging.error("Cannot update layers from fulcrum without an API key added to the admin page, "
+        logger.error("Cannot update layers from fulcrum without an API key added to the admin page, "
               "or FULCRUM_API_KEYS = ['some_key'] defined in settings.")
 
     # http://docs.celeryproject.org/en/latest/tutorials/task-cookbook.html#ensuring-a-task-is-only-executed-one-at-a-time
@@ -94,7 +103,7 @@ def task_update_layers():
                     django_fulcrum = DjangoFulcrum(fulcrum_api_key=fulcrum_api_key)
                     django_fulcrum.update_all_layers()
                 except UnauthorizedException:
-                    logging.error("The API key ending in: {}, is unauthorized.".format(fulcrum_api_key[-4:]))
+                    logger.error("The API key ending in: {}, is unauthorized.".format(fulcrum_api_key[-4:]))
                     continue
         finally:
             release_lock(lock_id)
@@ -159,7 +168,7 @@ def task_filter_assets(filter_name, after_time_added, run_once=False, run_time=N
             for asset in assets:
                 if asset.asset_type == 'photos':
                     if not is_valid_photo(asset.asset_data.path, filter_name=filter_name, run_once=run_once):
-                        logging.info("Attempting to delete {}".format(asset.asset_data.path))
+                        logger.info("Attempting to delete {}".format(asset.asset_data.path))
                         delete_list += [asset.asset_uid]
             for asset_uid in delete_list:
                 Asset.objects.filter(asset_uid__iexact=asset_uid).delete()
